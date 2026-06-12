@@ -1,0 +1,72 @@
+# 冷门棋类规则速查
+
+全栈 MVP：Flask 后端 + React 前端，用于浏览与管理冷门棋类规则。
+
+## 项目结构
+
+```
+├── backend/          # Flask + SQLAlchemy API（端口 3000）
+├── frontend/         # React + Vite + Ant Design（端口 3101）
+└── README.md
+```
+
+## 功能
+
+- **页面 1**：棋类列表（Ant Design List），支持新增 / 编辑 / 删除
+- **页面 2**：规则详情（Descriptions + Typography 摘要，react-markdown 渲染）
+- **字段**：棋类名、起源、规则摘要、难度、相关链接
+- **种子数据**：5 条冷门棋类（首次启动自动写入 `backend/data/chess.db`）
+
+## 环境要求
+
+- Python 3.10+
+- Node.js 18+
+
+## 启动方式
+
+### 1. 后端（端口 3000）
+
+```bash
+cd backend
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# macOS / Linux
+# source .venv/bin/activate
+
+pip install -r requirements.txt
+python app.py
+```
+
+后端 API 地址：`http://localhost:3000/api/games`
+
+### 2. 前端（端口 3101）
+
+新开一个终端：
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+浏览器访问：`http://localhost:3101`
+
+> 前端通过 Vite 代理将 `/api` 请求转发至后端 `http://localhost:3000`。
+
+## API 概览
+
+| 方法   | 路径              | 说明       |
+|--------|-------------------|------------|
+| GET    | /api/games        | 获取列表   |
+| GET    | /api/games/:id    | 获取详情   |
+| POST   | /api/games        | 创建条目   |
+| PUT    | /api/games/:id    | 更新条目   |
+| DELETE | /api/games/:id    | 删除条目   |
+
+## 技术栈
+
+- **前端**：React 18、Vite、TypeScript、Ant Design 5、React Router、axios、react-markdown
+- **后端**：Flask、Flask-SQLAlchemy、Flask-CORS、SQLite（`./data/chess.db`）
