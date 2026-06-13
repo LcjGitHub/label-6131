@@ -24,6 +24,7 @@ export default function App() {
   const navigate = useNavigate();
 
   const getSelectedKey = () => {
+    if (location.pathname.startsWith('/stats')) return '';
     if (location.pathname.startsWith('/categories')) return '/categories';
     if (location.pathname.startsWith('/favorites')) return '/favorites';
     return '/';
@@ -44,7 +45,7 @@ export default function App() {
           style={{ flex: 1, minWidth: 0, borderBottom: 'none' }}
         />
         <a
-          href="#/stats"
+          href="/stats"
           onClick={(e) => {
             e.preventDefault();
             navigate('/stats');
