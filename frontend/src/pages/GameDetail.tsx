@@ -22,20 +22,25 @@ export default function GameDetail() {
   const navigate = useNavigate();
   const [game, setGame] = useState<ChessGame | null>(null);
   const [neighbors, setNeighbors] = useState<GameNeighbors | null>(null);
+  const [neighborsError, setNeighborsError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       if (!id) return;
       setLoading(true);
+      setNeighborsError(false);
       try {
         const gameId = Number(id);
-        const [gameData, neighborsData] = await Promise.all([
-          fetchGame(gameId),
-          fetchGameNeighbors(gameId),
-        ]);
+        const gameData = await fetchGame(gameId);
         setGame(gameData);
-        setNeighbors(neighborsData);
+        try {
+          const neighborsData = await fetchGameNeighbors(gameId);
+          setNeighbors(neighborsData);
+        } catch {
+          setNeighborsError(true);
+          setNeighbors(null);
+        }
       } catch {
         message.error('加载详情失败');
       } finally {
@@ -65,8 +70,20 @@ export default function GameDetail() {
     );
   }
 
-  const hasPrev = neighbors?.prev != null;
-  const hasNext = neighbors?.next != null;
+  const hasPrev = neighbors?.prev != null && !neighborsError;
+  const hasNext = neighbors?.next != null && !neighborsError;
+
+  const getPrevTooltip = () => {
+    if (neighborsError) return '相邻棋类加载失败';
+    if (!neighbors?.prev) return '已经是第一条';
+    return neighbors.prev.name;
+  };
+
+  const getNextTooltip = () => {
+    if (neighborsError) return '相邻棋类加载失败';
+    if (!neighbors?.next) return '已经是最后一条';
+    return neighbors.next.name;
+  };
 
   return (
     <>
@@ -76,8 +93,8 @@ export default function GameDetail() {
 
       <Title level={2}>{game.name}</Title>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-        <Tooltip title={hasPrev ? neighbors!.prev!.name : '已经是第一条'}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
+        <Tooltip title={getPrevTooltip()}>
           <Button
             icon={<LeftOutlined />}
             disabled={!hasPrev}
@@ -86,7 +103,7 @@ export default function GameDetail() {
             上一条
           </Button>
         </Tooltip>
-        <Tooltip title={hasNext ? neighbors!.next!.name : '已经是最后一条'}>
+        <Tooltip title={getNextTooltip()}>
           <Button
             icon={<RightOutlined />}
             iconPosition="end"
