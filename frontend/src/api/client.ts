@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, PaginatedResponse, StatsOverview } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, PaginatedResponse, StatsOverview } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -69,6 +69,16 @@ export async function fetchGames(
  */
 export async function fetchGame(id: number): Promise<ChessGame> {
   const { data } = await client.get<ChessGame>(`/games/${id}`);
+  return data;
+}
+
+/**
+ * 获取当前棋类的上一条和下一条棋类
+ * @param id - 棋类 ID
+ * @returns 相邻棋类信息
+ */
+export async function fetchGameNeighbors(id: number): Promise<GameNeighbors> {
+  const { data } = await client.get<GameNeighbors>(`/games/${id}/neighbors`);
   return data;
 }
 

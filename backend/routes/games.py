@@ -93,6 +93,38 @@ def get_game(game_id: int):
     return jsonify(game.to_dict())
 
 
+@games_bp.get("/<int:game_id>/neighbors")
+def get_game_neighbors(game_id: int):
+    """获取当前棋类的上一条和下一条棋类编号及名称。"""
+    game = db.session.get(ChessGame, game_id)
+    if not game:
+        return jsonify({"error": "棋类不存在"}), 404
+
+    prev_game = (
+        ChessGame.query
+        .filter(ChessGame.id < game_id)
+        .order_by(ChessGame.id.desc())
+        .first()
+    )
+    next_game = (
+        ChessGame.query
+        .filter(ChessGame.id > game_id)
+        .order_by(ChessGame.id.asc())
+        .first()
+    )
+
+    return jsonify({
+        "prev": {
+            "id": prev_game.id,
+            "name": prev_game.name,
+        } if prev_game else None,
+        "next": {
+            "id": next_game.id,
+            "name": next_game.name,
+        } if next_game else None,
+    })
+
+
 @games_bp.get("/batch")
 def get_games_batch():
     """批量获取多条棋类详情（最多3条）。"""

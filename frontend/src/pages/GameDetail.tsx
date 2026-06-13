@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { Button, Descriptions, Spin, Tag, Typography, message } from 'antd';
-import { ArrowLeftOutlined, LinkOutlined } from '@ant-design/icons';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Button, Descriptions, Spin, Tag, Tooltip, Typography, message } from 'antd';
+import { ArrowLeftOutlined, LeftOutlined, LinkOutlined, RightOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 
-import { fetchGame } from '../api/client';
-import type { ChessGame } from '../types/game';
+import { fetchGame, fetchGameNeighbors } from '../api/client';
+import type { ChessGame, GameNeighbors } from '../types/game';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -19,7 +19,9 @@ const difficultyColor: Record<string, string> = {
 /** 规则详情页 */
 export default function GameDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [game, setGame] = useState<ChessGame | null>(null);
+  const [neighbors, setNeighbors] = useState<GameNeighbors | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,8 +29,13 @@ export default function GameDetail() {
       if (!id) return;
       setLoading(true);
       try {
-        const data = await fetchGame(Number(id));
-        setGame(data);
+        const gameId = Number(id);
+        const [gameData, neighborsData] = await Promise.all([
+          fetchGame(gameId),
+          fetchGameNeighbors(gameId),
+        ]);
+        setGame(gameData);
+        setNeighbors(neighborsData);
       } catch {
         message.error('加载详情失败');
       } finally {
@@ -58,6 +65,9 @@ export default function GameDetail() {
     );
   }
 
+  const hasPrev = neighbors?.prev != null;
+  const hasNext = neighbors?.next != null;
+
   return (
     <>
       <Button type="link" icon={<ArrowLeftOutlined />} style={{ paddingLeft: 0, marginBottom: 16 }}>
@@ -65,6 +75,28 @@ export default function GameDetail() {
       </Button>
 
       <Title level={2}>{game.name}</Title>
+
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+        <Tooltip title={hasPrev ? neighbors!.prev!.name : '已经是第一条'}>
+          <Button
+            icon={<LeftOutlined />}
+            disabled={!hasPrev}
+            onClick={() => hasPrev && navigate(`/games/${neighbors!.prev!.id}`)}
+          >
+            上一条
+          </Button>
+        </Tooltip>
+        <Tooltip title={hasNext ? neighbors!.next!.name : '已经是最后一条'}>
+          <Button
+            icon={<RightOutlined />}
+            iconPosition="end"
+            disabled={!hasNext}
+            onClick={() => hasNext && navigate(`/games/${neighbors!.next!.id}`)}
+          >
+            下一条
+          </Button>
+        </Tooltip>
+      </div>
 
       <Descriptions bordered column={1} style={{ marginBottom: 24 }}>
         <Descriptions.Item label="分类">

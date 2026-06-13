@@ -71,3 +71,15 @@ export interface StatsOverview {
   difficulty_distribution: Record<string, number>;
   origin_rank: OriginRankItem[];
 }
+
+/** 相邻棋类简要信息 */
+export interface NeighborGame {
+  id: number;
+  name: string;
+}
+
+/** 上下相邻棋类响应 */
+export interface GameNeighbors {
+  prev: NeighborGame | null;
+  next: NeighborGame | null;
+}
