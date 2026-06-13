@@ -7,6 +7,7 @@ import {
   Modal,
   Popconfirm,
   Space,
+  Spin,
   Typography,
   message,
 } from 'antd';
@@ -75,6 +76,14 @@ export default function CategoryList() {
     }
   };
 
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: 48 }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
   return (
     <>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
@@ -85,7 +94,6 @@ export default function CategoryList() {
       </Space>
 
       <List
-        loading={loading}
         itemLayout="vertical"
         dataSource={categories}
         renderItem={(item) => (
@@ -126,7 +134,7 @@ export default function CategoryList() {
         onCancel={() => setModalOpen(false)}
         onOk={handleSubmit}
         confirmLoading={submitting}
-        destroyOnClose
+        destroyOnHidden
         width={400}
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>

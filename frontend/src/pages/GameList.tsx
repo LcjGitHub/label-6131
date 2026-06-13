@@ -40,6 +40,8 @@ const difficultyColor: Record<string, string> = {
   困难: 'red',
 };
 
+const ALL_CATEGORY_VALUE = 0;
+
 /** 棋类列表页 */
 export default function GameList() {
   const [games, setGames] = useState<ChessGame[]>([]);
@@ -48,13 +50,14 @@ export default function GameList() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ChessGame | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [filterCategoryId, setFilterCategoryId] = useState<number | undefined>(undefined);
+  const [filterCategoryId, setFilterCategoryId] = useState<number>(ALL_CATEGORY_VALUE);
   const [form] = Form.useForm<ChessGamePayload>();
 
   const loadGames = async () => {
     setLoading(true);
     try {
-      const data = await fetchGames(filterCategoryId);
+      const categoryId = filterCategoryId === ALL_CATEGORY_VALUE ? undefined : filterCategoryId;
+      const data = await fetchGames(categoryId);
       setGames(data);
     } catch {
       message.error('加载棋类列表失败');
@@ -136,7 +139,7 @@ export default function GameList() {
   };
 
   const categoryOptions = [
-    { label: '全部分类', value: undefined },
+    { label: '全部分类', value: ALL_CATEGORY_VALUE },
     ...categories.map((c) => ({ label: c.name, value: c.id })),
   ];
 
@@ -192,7 +195,9 @@ export default function GameList() {
                 <Space direction="vertical" size={4}>
                   <Text type="secondary">起源：{item.origin}</Text>
                   <Space size={8} wrap>
-                    {item.category_name && <Tag color="purple">{item.category_name}</Tag>}
+                    <Tag color={item.category_name ? 'purple' : 'default'}>
+                      {item.category_name ?? '未分类'}
+                    </Tag>
                     <Tag color={difficultyColor[item.difficulty] ?? 'default'}>
                       {item.difficulty}
                     </Tag>
@@ -213,7 +218,7 @@ export default function GameList() {
         onCancel={() => setModalOpen(false)}
         onOk={handleSubmit}
         confirmLoading={submitting}
-        destroyOnClose
+        destroyOnHidden
         width={560}
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>

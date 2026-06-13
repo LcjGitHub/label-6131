@@ -19,23 +19,25 @@ def _parse_links(raw: str | None) -> str:
     return (raw or "").strip()
 
 
-def _parse_category_id(raw) -> int | None:
+def _resolve_category_id(raw) -> tuple[int | None, str | None]:
     """
-     解析分类编号字段。
+     解析并校验分类编号，若提供了不存在的分类则返回错误信息。
 
      @param raw - 原始分类编号
-     @returns {int | None} 解析后的分类编号
+     @returns {tuple[int | None, str | None]} (分类编号或 None, 错误信息或 None)
      """
     if raw is None or raw == "":
-        return None
+        return None, None
     try:
         cat_id = int(raw)
-        if cat_id <= 0:
-            return None
-        category = db.session.get(Category, cat_id)
-        return cat_id if category else None
     except (ValueError, TypeError):
-        return None
+        return None, "分类编号格式不正确"
+    if cat_id <= 0:
+        return None, None
+    category = db.session.get(Category, cat_id)
+    if not category:
+        return None, f"分类编号 {cat_id} 不存在"
+    return cat_id, None
 
 
 @games_bp.get("")
@@ -71,7 +73,10 @@ def create_game():
     summary = (data.get("summary") or "").strip()
     difficulty = (data.get("difficulty") or "").strip()
     links = _parse_links(data.get("links"))
-    category_id = _parse_category_id(data.get("category_id"))
+    category_id, cat_err = _resolve_category_id(data.get("category_id"))
+
+    if cat_err:
+        return jsonify({"error": cat_err}), 400
 
     if not all([name, origin, summary, difficulty]):
         return jsonify({"error": "name、origin、summary、difficulty 为必填项"}), 400
@@ -104,6 +109,10 @@ def update_game(game_id: int):
     origin = (data.get("origin") or "").strip()
     summary = (data.get("summary") or "").strip()
     difficulty = (data.get("difficulty") or "").strip()
+    category_id, cat_err = _resolve_category_id(data.get("category_id"))
+
+    if cat_err:
+        return jsonify({"error": cat_err}), 400
 
     if not all([name, origin, summary, difficulty]):
         return jsonify({"error": "name、origin、summary、difficulty 为必填项"}), 400
@@ -117,7 +126,7 @@ def update_game(game_id: int):
     game.summary = summary
     game.difficulty = difficulty
     game.links = _parse_links(data.get("links"))
-    game.category_id = _parse_category_id(data.get("category_id"))
+    game.category_id = category_id
     db.session.commit()
     return jsonify(game.to_dict())
 

@@ -4,11 +4,45 @@ import os
 
 from flask import Flask
 from flask_cors import CORS
+from sqlalchemy import inspect
 
 from models import db
 from routes.categories import categories_bp
 from routes.games import games_bp
 from seed import seed_database
+
+
+def _auto_migrate(app: Flask) -> None:
+    """
+     自动迁移：检测模型与实际表结构差异并补全新增列。
+
+     @param {Flask} app - Flask 应用实例
+     """
+    inspector = inspect(app.extensions["sqlalchemy"].engine)
+    with app.app_context():
+        if "chess_games" in inspector.get_table_names():
+            existing = {col["name"] for col in inspector.get_columns("chess_games")}
+            model_cols = {
+                c.name for c in db.metadata.tables["chess_games"].columns
+            }
+            missing = model_cols - existing
+            for col_name in missing:
+                col = db.metadata.tables["chess_games"].columns[col_name]
+                col_type = col.type.compile(dialect=db.engine.dialect)
+                nullable = "" if col.nullable else "NOT NULL"
+                default = ""
+                if col.server_default is not None:
+                    default = f"DEFAULT {col.server_default.arg}"
+                db.session.execute(
+                    db.text(
+                        f"ALTER TABLE chess_games ADD COLUMN {col_name} {col_type} {nullable} {default}"
+                    )
+                )
+            if missing:
+                db.session.commit()
+
+        if "categories" not in inspector.get_table_names():
+            db.create_all()
 
 
 def create_app() -> Flask:
@@ -39,6 +73,7 @@ def create_app() -> Flask:
 
     with app.app_context():
         db.create_all()
+        _auto_migrate(app)
         seed_database()
 
     return app

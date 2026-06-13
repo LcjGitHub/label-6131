@@ -67,11 +67,13 @@ export default function GameDetail() {
       <Title level={2}>{game.name}</Title>
 
       <Descriptions bordered column={1} style={{ marginBottom: 24 }}>
-        {game.category_name && (
-          <Descriptions.Item label="分类">
+        <Descriptions.Item label="分类">
+          {game.category_name ? (
             <Tag color="purple">{game.category_name}</Tag>
-          </Descriptions.Item>
-        )}
+          ) : (
+            <Tag>未分类</Tag>
+          )}
+        </Descriptions.Item>
         <Descriptions.Item label="起源">{game.origin}</Descriptions.Item>
         <Descriptions.Item label="难度">
           <Tag color={difficultyColor[game.difficulty] ?? 'default'}>{game.difficulty}</Tag>
