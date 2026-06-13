@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "ci": "npm run ci:backend && npm run ci:frontend",
+    "test": "cd backend && python -m pytest",
+    "test:verbose": "cd backend && python -m pytest -v",
+    "ci": "npm run test && npm run ci:backend && npm run ci:frontend",
     "ci:backend": "node scripts/backend-health-check.js",
     "ci:frontend": "cd frontend && npm run build"
   },

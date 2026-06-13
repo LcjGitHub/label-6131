@@ -47,10 +47,11 @@ def _auto_migrate(app: Flask) -> None:
             db.create_all()
 
 
-def create_app() -> Flask:
+def create_app(config: dict | None = None) -> Flask:
     """
      创建并配置 Flask 应用。
 
+     @param {dict | None} config - 可选的配置覆盖项
      @returns {Flask} 应用实例
      """
     app = Flask(__name__)
@@ -62,6 +63,9 @@ def create_app() -> Flask:
     db_path = os.path.join(data_dir, "chess.db")
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    if config:
+        app.config.update(config)
 
     db.init_app(app)
     CORS(app, resources={r"/api/*": {"origins": "*"}})
