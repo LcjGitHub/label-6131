@@ -161,6 +161,35 @@ def get_game_neighbors(game_id: int):
     })
 
 
+@games_bp.get("/<int:game_id>/similar")
+def get_similar_games(game_id: int):
+    """获取与当前棋类相同难度的其他棋类推荐（排除当前条目，最多3条）。"""
+    game = db.session.get(ChessGame, game_id)
+    if not game:
+        return jsonify({"error": "棋类不存在"}), 404
+
+    similar_games = (
+        ChessGame.query
+        .filter(
+            ChessGame.difficulty == game.difficulty,
+            ChessGame.id != game_id,
+        )
+        .order_by(ChessGame.id.asc())
+        .limit(3)
+        .all()
+    )
+
+    return jsonify({
+        "items": [
+            {
+                "id": g.id,
+                "name": g.name,
+            }
+            for g in similar_games
+        ],
+    })
+
+
 @games_bp.get("/batch")
 def get_games_batch():
     """批量获取多条棋类详情（最多3条）。"""

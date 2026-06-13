@@ -85,3 +85,14 @@ export interface GameNeighbors {
   prev: NeighborGame | null;
   next: NeighborGame | null;
 }
+
+/** 同类推荐棋类简要信息 */
+export interface SimilarGame {
+  id: number;
+  name: string;
+}
+
+/** 同类推荐响应 */
+export interface SimilarGamesResponse {
+  items: SimilarGame[];
+}

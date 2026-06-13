@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, PaginatedResponse, StatsOverview } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, PaginatedResponse, SimilarGamesResponse, StatsOverview } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -83,6 +83,16 @@ export async function fetchGame(id: number): Promise<ChessGame> {
  */
 export async function fetchGameNeighbors(id: number): Promise<GameNeighbors> {
   const { data } = await client.get<GameNeighbors>(`/games/${id}/neighbors`);
+  return data;
+}
+
+/**
+ * 获取与当前棋类相同难度的同类推荐（排除当前条目，最多3条）
+ * @param id - 棋类 ID
+ * @returns 同类推荐列表
+ */
+export async function fetchSimilarGames(id: number): Promise<SimilarGamesResponse> {
+  const { data } = await client.get<SimilarGamesResponse>(`/games/${id}/similar`);
   return data;
 }
 

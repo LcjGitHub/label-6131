@@ -4,8 +4,8 @@ import { Button, Descriptions, Spin, Tag, Tooltip, Typography, message } from 'a
 import { ArrowLeftOutlined, LeftOutlined, LinkOutlined, RightOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 
-import { fetchGame, fetchGameNeighbors } from '../api/client';
-import type { ChessGame, GameNeighbors } from '../types/game';
+import { fetchGame, fetchGameNeighbors, fetchSimilarGames } from '../api/client';
+import type { ChessGame, GameNeighbors, SimilarGamesResponse } from '../types/game';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -23,6 +23,8 @@ export default function GameDetail() {
   const [game, setGame] = useState<ChessGame | null>(null);
   const [neighbors, setNeighbors] = useState<GameNeighbors | null>(null);
   const [neighborsError, setNeighborsError] = useState(false);
+  const [similarGames, setSimilarGames] = useState<SimilarGamesResponse | null>(null);
+  const [similarError, setSimilarError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,6 +32,7 @@ export default function GameDetail() {
       if (!id) return;
       setLoading(true);
       setNeighborsError(false);
+      setSimilarError(false);
       try {
         const gameId = Number(id);
         const gameData = await fetchGame(gameId);
@@ -40,6 +43,13 @@ export default function GameDetail() {
         } catch {
           setNeighborsError(true);
           setNeighbors(null);
+        }
+        try {
+          const similarData = await fetchSimilarGames(gameId);
+          setSimilarGames(similarData);
+        } catch {
+          setSimilarError(true);
+          setSimilarGames(null);
         }
       } catch {
         message.error('加载详情失败');
@@ -148,6 +158,23 @@ export default function GameDetail() {
       <Title level={4}>规则摘要</Title>
       <Paragraph>
         <ReactMarkdown>{game.summary}</ReactMarkdown>
+      </Paragraph>
+
+      <Title level={4}>同类推荐</Title>
+      <Paragraph>
+        {similarError ? (
+          <Text type="secondary">暂无同类推荐</Text>
+        ) : similarGames?.items?.length ? (
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            {similarGames.items.map((item) => (
+              <li key={item.id} style={{ marginBottom: 8 }}>
+                <Link to={`/games/${item.id}`}>{item.name}</Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Text type="secondary">暂无同类推荐</Text>
+        )}
       </Paragraph>
     </>
   );
