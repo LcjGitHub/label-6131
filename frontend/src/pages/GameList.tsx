@@ -13,13 +13,16 @@ import {
   Typography,
   message,
 } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, StarFilled, StarOutlined } from '@ant-design/icons';
 
 import {
+  addFavorite,
   createGame,
   deleteGame,
   fetchCategories,
+  fetchFavoriteIds,
   fetchGames,
+  removeFavorite,
   updateGame,
 } from '../api/client';
 import type { Category, ChessGame, ChessGamePayload } from '../types/game';
@@ -51,6 +54,7 @@ export default function GameList() {
   const [editing, setEditing] = useState<ChessGame | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [filterCategoryId, setFilterCategoryId] = useState<number>(ALL_CATEGORY_VALUE);
+  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
   const [form] = Form.useForm<ChessGamePayload>();
 
   const loadGames = async () => {
@@ -75,8 +79,44 @@ export default function GameList() {
     }
   };
 
+  const loadFavoriteIds = async () => {
+    try {
+      const ids = await fetchFavoriteIds();
+      setFavoriteIds(new Set(ids));
+    } catch {
+      // silent
+    }
+  };
+
+  const toggleFavorite = async (gameId: number) => {
+    try {
+      if (favoriteIds.has(gameId)) {
+        await removeFavorite(gameId);
+        setFavoriteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(gameId);
+          return next;
+        });
+        message.success('已取消收藏');
+      } else {
+        await addFavorite(gameId);
+        setFavoriteIds((prev) => {
+          const next = new Set(prev);
+          next.add(gameId);
+          return next;
+        });
+        message.success('已收藏');
+      }
+    } catch (err) {
+      if (axiosIsError(err)) {
+        message.error(err.response?.data?.error ?? '操作失败');
+      }
+    }
+  };
+
   useEffect(() => {
     loadCategories();
+    loadFavoriteIds();
   }, []);
 
   useEffect(() => {
@@ -171,6 +211,15 @@ export default function GameList() {
           <List.Item
             key={item.id}
             actions={[
+              <Button
+                key="favorite"
+                type="link"
+                icon={favoriteIds.has(item.id) ? <StarFilled /> : <StarOutlined />}
+                onClick={() => toggleFavorite(item.id)}
+                style={favoriteIds.has(item.id) ? { color: '#faad14' } : undefined}
+              >
+                {favoriteIds.has(item.id) ? '已收藏' : '收藏'}
+              </Button>,
               <Button key="edit" type="link" icon={<EditOutlined />} onClick={() => openEdit(item)}>
                 编辑
               </Button>,

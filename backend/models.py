@@ -35,6 +35,35 @@ class Category(db.Model):
         }
 
 
+class Favorite(db.Model):
+    """收藏记录。"""
+
+    __tablename__ = "favorites"
+
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey("chess_games.id"), nullable=False, unique=True)
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    game = db.relationship("ChessGame", backref="favorite", lazy=True)
+
+    def to_dict(self) -> dict:
+        """
+        序列化为 API 响应字典。
+
+        @returns {dict} 收藏条目
+        """
+        return {
+            "id": self.id,
+            "game_id": self.game_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "game": self.game.to_dict() if self.game else None,
+        }
+
+
 class ChessGame(db.Model):
     """冷门棋类规则条目。"""
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGamePayload } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGamePayload, Favorite } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -82,4 +82,23 @@ export async function updateGame(id: number, payload: ChessGamePayload): Promise
  */
 export async function deleteGame(id: number): Promise<void> {
   await client.delete(`/games/${id}`);
+}
+
+export async function fetchFavorites(): Promise<Favorite[]> {
+  const { data } = await client.get<Favorite[]>('/favorites');
+  return data;
+}
+
+export async function fetchFavoriteIds(): Promise<number[]> {
+  const { data } = await client.get<number[]>('/favorites/ids');
+  return data;
+}
+
+export async function addFavorite(gameId: number): Promise<Favorite> {
+  const { data } = await client.post<Favorite>('/favorites', { game_id: gameId });
+  return data;
+}
+
+export async function removeFavorite(gameId: number): Promise<void> {
+  await client.delete(`/favorites/${gameId}`);
 }

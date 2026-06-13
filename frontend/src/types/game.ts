@@ -33,3 +33,11 @@ export interface ChessGamePayload {
   links?: string;
   category_id?: number | null;
 }
+
+/** 收藏条目类型 */
+export interface Favorite {
+  id: number;
+  game_id: number;
+  created_at?: string;
+  game: ChessGame | null;
+}

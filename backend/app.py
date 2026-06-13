@@ -8,6 +8,7 @@ from sqlalchemy import inspect
 
 from models import db
 from routes.categories import categories_bp
+from routes.favorites import favorites_bp
 from routes.games import games_bp
 from seed import seed_database
 
@@ -65,6 +66,7 @@ def create_app() -> Flask:
     CORS(app, resources={r"/api/*": {"origins": "*"}})
     app.register_blueprint(games_bp)
     app.register_blueprint(categories_bp)
+    app.register_blueprint(favorites_bp)
 
     @app.get("/api/health")
     def health():
