@@ -56,6 +56,18 @@ export async function fetchGame(id: number): Promise<ChessGame> {
 }
 
 /**
+ * 批量获取多条棋类详情（最多3条）
+ * @param ids - 棋类 ID 数组
+ * @returns 棋类详情数组
+ */
+export async function fetchGamesBatch(ids: number[]): Promise<ChessGame[]> {
+  const { data } = await client.get<ChessGame[]>('/games/batch', {
+    params: { ids: ids.join(',') },
+  });
+  return data;
+}
+
+/**
  * 创建棋类条目
  * @param payload - 创建数据
  * @returns 新建条目

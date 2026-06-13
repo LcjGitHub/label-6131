@@ -4,6 +4,7 @@ import { AppstoreOutlined, StarOutlined, UnorderedListOutlined } from '@ant-desi
 
 import CategoryList from './pages/CategoryList';
 import FavoriteList from './pages/FavoriteList';
+import GameCompare from './pages/GameCompare';
 import GameDetail from './pages/GameDetail';
 import GameList from './pages/GameList';
 
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/favorites" element={<FavoriteList />} />
           <Route path="/categories" element={<CategoryList />} />
           <Route path="/games/:id" element={<GameDetail />} />
+          <Route path="/compare" element={<GameCompare />} />
         </Routes>
       </Content>
     </Layout>

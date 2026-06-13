@@ -64,6 +64,39 @@ def get_game(game_id: int):
     return jsonify(game.to_dict())
 
 
+@games_bp.get("/batch")
+def get_games_batch():
+    """批量获取多条棋类详情（最多3条）。"""
+    raw_ids = request.args.get("ids")
+    if not raw_ids:
+        return jsonify({"error": "请提供棋类编号 ids 参数"}), 400
+
+    id_strs = [s.strip() for s in raw_ids.split(",") if s.strip()]
+    if len(id_strs) == 0:
+        return jsonify({"error": "ids 参数不能为空"}), 400
+    if len(id_strs) > 3:
+        return jsonify({"error": "最多同时对比3个棋类"}), 400
+
+    parsed_ids: list[int] = []
+    for s in id_strs:
+        try:
+            parsed_ids.append(int(s))
+        except ValueError:
+            return jsonify({"error": f"无效的编号: {s}"}), 400
+
+    games = ChessGame.query.filter(ChessGame.id.in_(parsed_ids)).all()
+    game_map = {g.id: g for g in games}
+
+    result: list[dict] = []
+    for gid in parsed_ids:
+        if gid in game_map:
+            result.append(game_map[gid].to_dict())
+        else:
+            result.append({"id": gid, "error": "棋类不存在"})
+
+    return jsonify(result)
+
+
 @games_bp.post("")
 def create_game():
     """创建棋类条目。"""

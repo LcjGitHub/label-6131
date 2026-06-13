@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Button,
+  Checkbox,
   Form,
   Input,
   List,
@@ -55,7 +56,9 @@ export default function GameList() {
   const [submitting, setSubmitting] = useState(false);
   const [filterCategoryId, setFilterCategoryId] = useState<number>(ALL_CATEGORY_VALUE);
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [form] = Form.useForm<ChessGamePayload>();
+  const navigate = useNavigate();
 
   const loadGames = async () => {
     setLoading(true);
@@ -178,6 +181,35 @@ export default function GameList() {
     }
   };
 
+  const toggleSelect = (gameId: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(gameId)) {
+        next.delete(gameId);
+      } else {
+        if (next.size >= 3) {
+          message.warning('最多只能选择3个棋类进行对比');
+          return prev;
+        }
+        next.add(gameId);
+      }
+      return next;
+    });
+  };
+
+  const startCompare = () => {
+    if (selectedIds.size < 1) {
+      message.warning('请至少选择1个棋类');
+      return;
+    }
+    if (selectedIds.size > 3) {
+      message.warning('最多只能选择3个棋类进行对比');
+      return;
+    }
+    const ids = Array.from(selectedIds).join(',');
+    navigate(`/compare?ids=${ids}`);
+  };
+
   const categoryOptions = [
     { label: '全部分类', value: ALL_CATEGORY_VALUE },
     ...categories.map((c) => ({ label: c.name, value: c.id })),
@@ -197,6 +229,13 @@ export default function GameList() {
             options={categoryOptions}
             placeholder="按分类筛选"
           />
+          <Button
+            type="primary"
+            onClick={startCompare}
+            disabled={selectedIds.size < 1}
+          >
+            开始对比（已选 {selectedIds.size}/3）
+          </Button>
         </Space>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           新增棋类
@@ -234,29 +273,38 @@ export default function GameList() {
               </Popconfirm>,
             ]}
           >
-            <List.Item.Meta
-              title={
-                <Link to={`/games/${item.id}`} style={{ fontSize: 16 }}>
-                  {item.name}
-                </Link>
-              }
-              description={
-                <Space direction="vertical" size={4}>
-                  <Text type="secondary">起源：{item.origin}</Text>
-                  <Space size={8} wrap>
-                    <Tag color={item.category_name ? 'purple' : 'default'}>
-                      {item.category_name ?? '未分类'}
-                    </Tag>
-                    <Tag color={difficultyColor[item.difficulty] ?? 'default'}>
-                      {item.difficulty}
-                    </Tag>
-                  </Space>
-                </Space>
-              }
-            />
-            <Paragraph ellipsis={{ rows: 2 }} style={{ marginBottom: 0 }}>
-              {item.summary}
-            </Paragraph>
+            <Space align="start" style={{ width: '100%' }}>
+              <Checkbox
+                checked={selectedIds.has(item.id)}
+                onChange={() => toggleSelect(item.id)}
+                style={{ marginTop: 4 }}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <List.Item.Meta
+                  title={
+                    <Link to={`/games/${item.id}`} style={{ fontSize: 16 }}>
+                      {item.name}
+                    </Link>
+                  }
+                  description={
+                    <Space direction="vertical" size={4}>
+                      <Text type="secondary">起源：{item.origin}</Text>
+                      <Space size={8} wrap>
+                        <Tag color={item.category_name ? 'purple' : 'default'}>
+                          {item.category_name ?? '未分类'}
+                        </Tag>
+                        <Tag color={difficultyColor[item.difficulty] ?? 'default'}>
+                          {item.difficulty}
+                        </Tag>
+                      </Space>
+                    </Space>
+                  }
+                />
+                <Paragraph ellipsis={{ rows: 2 }} style={{ marginBottom: 0 }}>
+                  {item.summary}
+                </Paragraph>
+              </div>
+            </Space>
           </List.Item>
         )}
       />
