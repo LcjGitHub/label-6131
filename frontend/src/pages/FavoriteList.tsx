@@ -100,6 +100,9 @@ export default function FavoriteList() {
                 description={
                   <Space direction="vertical" size={4}>
                     <Text type="secondary">起源：{game.origin}</Text>
+                    {game.board_size && (
+                      <Text type="secondary">棋盘规格：{game.board_size}</Text>
+                    )}
                     <Space size={8} wrap>
                       <Tag color={game.category_name ? 'purple' : 'default'}>
                         {game.category_name ?? '未分类'}

@@ -18,6 +18,7 @@ export interface ChessGame {
   summary: string;
   difficulty: string;
   links: string;
+  board_size: string;
   category_id: number | null;
   category_name: string | null;
   created_at?: string;
@@ -31,6 +32,7 @@ export interface ChessGamePayload {
   summary: string;
   difficulty: string;
   links?: string;
+  board_size?: string;
   category_id?: number | null;
 }
 

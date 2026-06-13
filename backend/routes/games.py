@@ -167,6 +167,7 @@ def create_game():
     summary = (data.get("summary") or "").strip()
     difficulty = (data.get("difficulty") or "").strip()
     links = _parse_links(data.get("links"))
+    board_size = (data.get("board_size") or "").strip() or None
     category_id, cat_err = _resolve_category_id(data.get("category_id"))
 
     if cat_err:
@@ -184,6 +185,7 @@ def create_game():
         summary=summary,
         difficulty=difficulty,
         links=links,
+        board_size=board_size,
         category_id=category_id,
     )
     db.session.add(game)
@@ -203,6 +205,7 @@ def update_game(game_id: int):
     origin = (data.get("origin") or "").strip()
     summary = (data.get("summary") or "").strip()
     difficulty = (data.get("difficulty") or "").strip()
+    board_size = (data.get("board_size") or "").strip() or None
     category_id, cat_err = _resolve_category_id(data.get("category_id"))
 
     if cat_err:
@@ -220,6 +223,7 @@ def update_game(game_id: int):
     game.summary = summary
     game.difficulty = difficulty
     game.links = _parse_links(data.get("links"))
+    game.board_size = board_size
     game.category_id = category_id
     db.session.commit()
     return jsonify(game.to_dict())

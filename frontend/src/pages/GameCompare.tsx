@@ -109,6 +109,7 @@ export default function GameCompare() {
 
   const rowData = [
     { field: 'origin', label: '起源' },
+    { field: 'board_size', label: '棋盘规格' },
     { field: 'difficulty', label: '难度' },
     { field: 'summary', label: '规则摘要' },
     { field: 'links', label: '相关链接' },
@@ -195,6 +196,12 @@ function renderCell(game: ChessGame, field: string) {
   switch (field) {
     case 'origin':
       return <Text>{game.origin}</Text>;
+    case 'board_size':
+      return game.board_size ? (
+        <Text>{game.board_size}</Text>
+      ) : (
+        <Text type="secondary">暂无</Text>
+      );
     case 'difficulty':
       return (
         <Tag color={difficultyColor[game.difficulty] ?? 'default'}>{game.difficulty}</Tag>

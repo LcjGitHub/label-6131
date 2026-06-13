@@ -75,6 +75,7 @@ class ChessGame(db.Model):
     summary = db.Column(db.Text, nullable=False)
     difficulty = db.Column(db.String(50), nullable=False)
     links = db.Column(db.Text, nullable=True)
+    board_size = db.Column(db.String(50), nullable=True)
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
     created_at = db.Column(
         db.DateTime,
@@ -101,6 +102,7 @@ class ChessGame(db.Model):
             "summary": self.summary,
             "difficulty": self.difficulty,
             "links": self.links or "",
+            "board_size": self.board_size or "",
             "category_id": self.category_id,
             "category_name": self.category.name if self.category else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,

@@ -157,6 +157,7 @@ export default function GameList() {
       summary: game.summary,
       difficulty: game.difficulty,
       links: game.links,
+      board_size: game.board_size,
       category_id: game.category_id ?? undefined,
     });
     setModalOpen(true);
@@ -343,6 +344,9 @@ export default function GameList() {
                   description={
                     <Space direction="vertical" size={4}>
                       <Text type="secondary">起源：{item.origin}</Text>
+                      {item.board_size && (
+                        <Text type="secondary">棋盘规格：{item.board_size}</Text>
+                      )}
                       <Space size={8} wrap>
                         <Tag color={item.category_name ? 'purple' : 'default'}>
                           {item.category_name ?? '未分类'}
@@ -404,6 +408,9 @@ export default function GameList() {
             rules={[{ required: true, message: '请选择难度' }]}
           >
             <Select options={DIFFICULTY_OPTIONS} placeholder="选择难度" />
+          </Form.Item>
+          <Form.Item name="board_size" label="棋盘规格">
+            <Input placeholder="例如：15×15（选填）" />
           </Form.Item>
           <Form.Item name="category_id" label="分类">
             <Select

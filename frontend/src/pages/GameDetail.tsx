@@ -124,6 +124,13 @@ export default function GameDetail() {
           )}
         </Descriptions.Item>
         <Descriptions.Item label="起源">{game.origin}</Descriptions.Item>
+        <Descriptions.Item label="棋盘规格">
+          {game.board_size ? (
+            game.board_size
+          ) : (
+            <Text type="secondary">暂无</Text>
+          )}
+        </Descriptions.Item>
         <Descriptions.Item label="难度">
           <Tag color={difficultyColor[game.difficulty] ?? 'default'}>{game.difficulty}</Tag>
         </Descriptions.Item>
