@@ -15,8 +15,14 @@ import {
 } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 
-import { createGame, deleteGame, fetchGames, updateGame } from '../api/client';
-import type { ChessGame, ChessGamePayload } from '../types/game';
+import {
+  createGame,
+  deleteGame,
+  fetchCategories,
+  fetchGames,
+  updateGame,
+} from '../api/client';
+import type { Category, ChessGame, ChessGamePayload } from '../types/game';
 
 const { Paragraph, Text } = Typography;
 
@@ -37,16 +43,18 @@ const difficultyColor: Record<string, string> = {
 /** 棋类列表页 */
 export default function GameList() {
   const [games, setGames] = useState<ChessGame[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ChessGame | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [filterCategoryId, setFilterCategoryId] = useState<number | undefined>(undefined);
   const [form] = Form.useForm<ChessGamePayload>();
 
   const loadGames = async () => {
     setLoading(true);
     try {
-      const data = await fetchGames();
+      const data = await fetchGames(filterCategoryId);
       setGames(data);
     } catch {
       message.error('加载棋类列表失败');
@@ -55,9 +63,22 @@ export default function GameList() {
     }
   };
 
+  const loadCategories = async () => {
+    try {
+      const data = await fetchCategories();
+      setCategories(data);
+    } catch {
+      message.error('加载分类列表失败');
+    }
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
   useEffect(() => {
     loadGames();
-  }, []);
+  }, [filterCategoryId]);
 
   const openCreate = () => {
     setEditing(null);
@@ -73,6 +94,7 @@ export default function GameList() {
       summary: game.summary,
       difficulty: game.difficulty,
       links: game.links,
+      category_id: game.category_id ?? undefined,
     });
     setModalOpen(true);
   };
@@ -81,11 +103,15 @@ export default function GameList() {
     try {
       const values = await form.validateFields();
       setSubmitting(true);
+      const payload: ChessGamePayload = {
+        ...values,
+        category_id: values.category_id ?? null,
+      };
       if (editing) {
-        await updateGame(editing.id, values);
+        await updateGame(editing.id, payload);
         message.success('更新成功');
       } else {
-        await createGame(values);
+        await createGame(payload);
         message.success('创建成功');
       }
       setModalOpen(false);
@@ -109,10 +135,26 @@ export default function GameList() {
     }
   };
 
+  const categoryOptions = [
+    { label: '全部分类', value: undefined },
+    ...categories.map((c) => ({ label: c.name, value: c.id })),
+  ];
+
+  const gameCategoryOptions = categories.map((c) => ({ label: c.name, value: c.id }));
+
   return (
     <>
-      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-        <Text type="secondary">共 {games.length} 种冷门棋类</Text>
+      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
+        <Space>
+          <Text type="secondary">共 {games.length} 种冷门棋类</Text>
+          <Select
+            style={{ minWidth: 160 }}
+            value={filterCategoryId}
+            onChange={setFilterCategoryId}
+            options={categoryOptions}
+            placeholder="按分类筛选"
+          />
+        </Space>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           新增棋类
         </Button>
@@ -149,7 +191,12 @@ export default function GameList() {
               description={
                 <Space direction="vertical" size={4}>
                   <Text type="secondary">起源：{item.origin}</Text>
-                  <Tag color={difficultyColor[item.difficulty] ?? 'default'}>{item.difficulty}</Tag>
+                  <Space size={8} wrap>
+                    {item.category_name && <Tag color="purple">{item.category_name}</Tag>}
+                    <Tag color={difficultyColor[item.difficulty] ?? 'default'}>
+                      {item.difficulty}
+                    </Tag>
+                  </Space>
                 </Space>
               }
             />
@@ -189,6 +236,13 @@ export default function GameList() {
             rules={[{ required: true, message: '请选择难度' }]}
           >
             <Select options={DIFFICULTY_OPTIONS} placeholder="选择难度" />
+          </Form.Item>
+          <Form.Item name="category_id" label="分类">
+            <Select
+              options={gameCategoryOptions}
+              placeholder="选择分类（可选）"
+              allowClear
+            />
           </Form.Item>
           <Form.Item name="links" label="相关链接">
             <Input placeholder="https://..." />

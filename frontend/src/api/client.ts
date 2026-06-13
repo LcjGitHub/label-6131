@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { ChessGame, ChessGamePayload } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGamePayload } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -8,11 +8,40 @@ const client = axios.create({
 });
 
 /**
+ * 获取全部分类列表
+ * @returns 分类数组
+ */
+export async function fetchCategories(): Promise<Category[]> {
+  const { data } = await client.get<Category[]>('/categories');
+  return data;
+}
+
+/**
+ * 创建分类
+ * @param payload - 创建数据
+ * @returns 新建分类
+ */
+export async function createCategory(payload: CategoryPayload): Promise<Category> {
+  const { data } = await client.post<Category>('/categories', payload);
+  return data;
+}
+
+/**
+ * 删除分类
+ * @param id - 分类 ID
+ */
+export async function deleteCategory(id: number): Promise<void> {
+  await client.delete(`/categories/${id}`);
+}
+
+/**
  * 获取全部棋类列表
+ * @param categoryId - 可选的分类 ID，用于按分类筛选
  * @returns 棋类数组
  */
-export async function fetchGames(): Promise<ChessGame[]> {
-  const { data } = await client.get<ChessGame[]>('/games');
+export async function fetchGames(categoryId?: number | null): Promise<ChessGame[]> {
+  const params = categoryId ? { category_id: categoryId } : {};
+  const { data } = await client.get<ChessGame[]>('/games', { params });
   return data;
 }
 

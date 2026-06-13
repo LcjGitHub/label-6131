@@ -7,6 +7,34 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
+class Category(db.Model):
+    """棋类分类。"""
+
+    __tablename__ = "categories"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False, unique=True)
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    games = db.relationship("ChessGame", backref="category", lazy=True)
+
+    def to_dict(self) -> dict:
+        """
+        序列化为 API 响应字典。
+
+        @returns {dict} 分类条目
+        """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class ChessGame(db.Model):
     """冷门棋类规则条目。"""
 
@@ -18,6 +46,7 @@ class ChessGame(db.Model):
     summary = db.Column(db.Text, nullable=False)
     difficulty = db.Column(db.String(50), nullable=False)
     links = db.Column(db.Text, nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
     created_at = db.Column(
         db.DateTime,
         default=lambda: datetime.now(timezone.utc),
@@ -43,6 +72,8 @@ class ChessGame(db.Model):
             "summary": self.summary,
             "difficulty": self.difficulty,
             "links": self.links or "",
+            "category_id": self.category_id,
+            "category_name": self.category.name if self.category else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

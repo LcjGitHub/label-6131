@@ -1,3 +1,15 @@
+/** 分类条目类型 */
+export interface Category {
+  id: number;
+  name: string;
+  created_at?: string;
+}
+
+/** 创建分类请求体 */
+export interface CategoryPayload {
+  name: string;
+}
+
 /** 棋类条目类型 */
 export interface ChessGame {
   id: number;
@@ -6,6 +18,8 @@ export interface ChessGame {
   summary: string;
   difficulty: string;
   links: string;
+  category_id: number | null;
+  category_name: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -17,4 +31,5 @@ export interface ChessGamePayload {
   summary: string;
   difficulty: string;
   links?: string;
+  category_id?: number | null;
 }

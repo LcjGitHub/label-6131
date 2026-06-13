@@ -6,6 +6,7 @@ from flask import Flask
 from flask_cors import CORS
 
 from models import db
+from routes.categories import categories_bp
 from routes.games import games_bp
 from seed import seed_database
 
@@ -29,6 +30,7 @@ def create_app() -> Flask:
     db.init_app(app)
     CORS(app, resources={r"/api/*": {"origins": "*"}})
     app.register_blueprint(games_bp)
+    app.register_blueprint(categories_bp)
 
     @app.get("/api/health")
     def health():

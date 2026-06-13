@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
 
-from models import ChessGame, db
+from models import Category, ChessGame, db
 
 games_bp = Blueprint("games", __name__, url_prefix="/api/games")
 
@@ -19,10 +19,37 @@ def _parse_links(raw: str | None) -> str:
     return (raw or "").strip()
 
 
+def _parse_category_id(raw) -> int | None:
+    """
+     解析分类编号字段。
+
+     @param raw - 原始分类编号
+     @returns {int | None} 解析后的分类编号
+     """
+    if raw is None or raw == "":
+        return None
+    try:
+        cat_id = int(raw)
+        if cat_id <= 0:
+            return None
+        category = db.session.get(Category, cat_id)
+        return cat_id if category else None
+    except (ValueError, TypeError):
+        return None
+
+
 @games_bp.get("")
 def list_games():
-    """获取全部棋类列表。"""
-    games = ChessGame.query.order_by(ChessGame.id.asc()).all()
+    """获取全部棋类列表，支持按分类筛选。"""
+    category_id = request.args.get("category_id")
+    query = ChessGame.query
+    if category_id and category_id != "":
+        try:
+            cat_id = int(category_id)
+            query = query.filter_by(category_id=cat_id)
+        except ValueError:
+            pass
+    games = query.order_by(ChessGame.id.asc()).all()
     return jsonify([game.to_dict() for game in games])
 
 
@@ -44,6 +71,7 @@ def create_game():
     summary = (data.get("summary") or "").strip()
     difficulty = (data.get("difficulty") or "").strip()
     links = _parse_links(data.get("links"))
+    category_id = _parse_category_id(data.get("category_id"))
 
     if not all([name, origin, summary, difficulty]):
         return jsonify({"error": "name、origin、summary、difficulty 为必填项"}), 400
@@ -57,6 +85,7 @@ def create_game():
         summary=summary,
         difficulty=difficulty,
         links=links,
+        category_id=category_id,
     )
     db.session.add(game)
     db.session.commit()
@@ -88,6 +117,7 @@ def update_game(game_id: int):
     game.summary = summary
     game.difficulty = difficulty
     game.links = _parse_links(data.get("links"))
+    game.category_id = _parse_category_id(data.get("category_id"))
     db.session.commit()
     return jsonify(game.to_dict())
 

@@ -1,6 +1,14 @@
-"""种子数据：5 条冷门棋类规则。"""
+"""种子数据：5 条冷门棋类规则及默认分类。"""
 
-from models import ChessGame, db
+from models import Category, ChessGame, db
+
+SEED_CATEGORIES = [
+    "连子类",
+    "摆设类",
+    "将棋类",
+    "象棋变体",
+    "国际象棋变体",
+]
 
 SEED_GAMES = [
     {
@@ -13,6 +21,7 @@ SEED_GAMES = [
         ),
         "difficulty": "中等",
         "links": "https://zh.wikipedia.org/wiki/%E9%80%A3%E7%8F%A0",
+        "category_index": 0,
     },
     {
         "name": "九子棋（Nine Men's Morris）",
@@ -26,6 +35,7 @@ SEED_GAMES = [
         ),
         "difficulty": "入门",
         "links": "https://zh.wikipedia.org/wiki/%E4%B9%9D%E5%AD%90%E6%A3%8B",
+        "category_index": 1,
     },
     {
         "name": "将棋（Shogi）",
@@ -38,6 +48,7 @@ SEED_GAMES = [
         ),
         "difficulty": "较难",
         "links": "https://zh.wikipedia.org/wiki/%E5%B0%86%E6%A3%8B",
+        "category_index": 2,
     },
     {
         "name": "韩国janggi（韩国象棋）",
@@ -50,6 +61,7 @@ SEED_GAMES = [
         ),
         "difficulty": "中等",
         "links": "https://zh.wikipedia.org/wiki/%E9%9F%A9%E5%9B%BD%E8%B1%A1%E6%A3%8B",
+        "category_index": 3,
     },
     {
         "name": "菲舍尔随机象棋（Chess960）",
@@ -62,8 +74,26 @@ SEED_GAMES = [
         ),
         "difficulty": "较难",
         "links": "https://zh.wikipedia.org/wiki/%E8%8F%B2%E8%88%8D%E7%88%B7%E9%9A%8F%E6%9C%BA%E8%B1%A1%E6%A3%8B",
+        "category_index": 4,
     },
 ]
+
+
+def _seed_categories() -> list[Category]:
+    """
+    创建默认分类并返回分类列表。
+
+    @returns {list[Category]} 分类列表
+    """
+    categories = []
+    for name in SEED_CATEGORIES:
+        category = Category.query.filter_by(name=name).first()
+        if not category:
+            category = Category(name=name)
+            db.session.add(category)
+            db.session.flush()
+        categories.append(category)
+    return categories
 
 
 def seed_database() -> None:
@@ -75,7 +105,11 @@ def seed_database() -> None:
     if ChessGame.query.count() > 0:
         return
 
+    categories = _seed_categories()
+
     for item in SEED_GAMES:
-        db.session.add(ChessGame(**item))
+        category_index = item.pop("category_index", None)
+        category_id = categories[category_index].id if category_index is not None else None
+        db.session.add(ChessGame(category_id=category_id, **item))
 
     db.session.commit()
