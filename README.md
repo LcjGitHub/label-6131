@@ -12,8 +12,9 @@
 
 ## 功能
 
-- **页面 1**：棋类列表（Ant Design List），支持新增 / 编辑 / 删除
+- **页面 1**：棋类列表（Ant Design List），支持新增 / 编辑 / 删除 / 收藏
 - **页面 2**：规则详情（Descriptions + Typography 摘要，react-markdown 渲染）
+- **页面 3**：我的收藏（列表展示已收藏棋类，支持跳转详情和取消收藏）
 - **字段**：棋类名、起源、规则摘要、难度、相关链接
 - **种子数据**：5 条冷门棋类（首次启动自动写入 `backend/data/chess.db`）
 
@@ -58,13 +59,17 @@ npm run dev
 
 ## API 概览
 
-| 方法   | 路径              | 说明       |
-|--------|-------------------|------------|
-| GET    | /api/games        | 获取列表   |
-| GET    | /api/games/:id    | 获取详情   |
-| POST   | /api/games        | 创建条目   |
-| PUT    | /api/games/:id    | 更新条目   |
-| DELETE | /api/games/:id    | 删除条目   |
+| 方法   | 路径                 | 说明           |
+|--------|----------------------|----------------|
+| GET    | /api/games          | 获取列表       |
+| GET    | /api/games/:id      | 获取详情       |
+| POST   | /api/games          | 创建条目       |
+| PUT    | /api/games/:id      | 更新条目       |
+| DELETE | /api/games/:id      | 删除条目       |
+| GET    | /api/favorites       | 获取全部收藏（含棋类详情） |
+| GET    | /api/favorites/ids   | 获取已收藏棋类 ID 列表 |
+| POST   | /api/favorites       | 添加收藏（body: `{ game_id }`） |
+| DELETE | /api/favorites/:game_id | 取消收藏     |
 
 ## 技术栈
 

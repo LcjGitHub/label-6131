@@ -84,21 +84,38 @@ export async function deleteGame(id: number): Promise<void> {
   await client.delete(`/games/${id}`);
 }
 
+/**
+ * 获取全部收藏列表（含棋类详情）
+ * @returns 收藏条目数组
+ */
 export async function fetchFavorites(): Promise<Favorite[]> {
   const { data } = await client.get<Favorite[]>('/favorites');
   return data;
 }
 
+/**
+ * 获取全部已收藏的棋类 ID 列表
+ * @returns 已收藏的棋类 ID 数组
+ */
 export async function fetchFavoriteIds(): Promise<number[]> {
   const { data } = await client.get<number[]>('/favorites/ids');
   return data;
 }
 
+/**
+ * 添加收藏
+ * @param gameId - 棋类 ID
+ * @returns 新建的收藏条目
+ */
 export async function addFavorite(gameId: number): Promise<Favorite> {
   const { data } = await client.post<Favorite>('/favorites', { game_id: gameId });
   return data;
 }
 
+/**
+ * 取消收藏
+ * @param gameId - 棋类 ID
+ */
 export async function removeFavorite(gameId: number): Promise<void> {
   await client.delete(`/favorites/${gameId}`);
 }

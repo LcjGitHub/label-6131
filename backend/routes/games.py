@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
 
-from models import Category, ChessGame, db
+from models import Category, ChessGame, Favorite, db
 
 games_bp = Blueprint("games", __name__, url_prefix="/api/games")
 
@@ -138,6 +138,7 @@ def delete_game(game_id: int):
     if not game:
         return jsonify({"error": "棋类不存在"}), 404
 
+    Favorite.query.filter_by(game_id=game_id).delete()
     db.session.delete(game)
     db.session.commit()
     return jsonify({"message": "删除成功"})

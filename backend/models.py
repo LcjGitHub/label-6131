@@ -41,7 +41,7 @@ class Favorite(db.Model):
     __tablename__ = "favorites"
 
     id = db.Column(db.Integer, primary_key=True)
-    game_id = db.Column(db.Integer, db.ForeignKey("chess_games.id"), nullable=False, unique=True)
+    game_id = db.Column(db.Integer, db.ForeignKey("chess_games.id", ondelete="CASCADE"), nullable=False, unique=True)
     created_at = db.Column(
         db.DateTime,
         default=lambda: datetime.now(timezone.utc),

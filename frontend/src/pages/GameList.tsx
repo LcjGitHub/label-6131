@@ -84,7 +84,7 @@ export default function GameList() {
       const ids = await fetchFavoriteIds();
       setFavoriteIds(new Set(ids));
     } catch {
-      // silent
+      message.error('加载收藏状态失败');
     }
   };
 
