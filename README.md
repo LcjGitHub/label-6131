@@ -63,7 +63,7 @@ npm run dev
 
 | 方法   | 路径                 | 说明           |
 |--------|----------------------|----------------|
-| GET    | /api/games          | 获取列表       |
+| GET    | /api/games          | 获取列表（支持 `sort_by` 和 `sort_order` 排序参数，详见下方说明） |
 | GET    | /api/games/:id      | 获取详情       |
 | GET    | /api/games/:id/neighbors | 获取当前棋类的上一条和下一条（返回 `{ prev, next }`，每项为 `{ id, name }` 或 `null`） |
 | GET    | /api/games/batch?ids=1,2,3 | 批量获取多条棋类详情（最多 3 个，返回按传入顺序排列，不存在的编号会包含 `error` 字段） |

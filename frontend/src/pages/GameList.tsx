@@ -253,6 +253,8 @@ export default function GameList() {
     setKeywordInput('');
     setFilterDifficulty(ALL_DIFFICULTY_VALUE);
     setFilterCategoryId(ALL_CATEGORY_VALUE);
+    setSortBy('id');
+    setSortOrder('asc');
     setPage(1);
     setSearchTrigger((prev) => prev + 1);
   };

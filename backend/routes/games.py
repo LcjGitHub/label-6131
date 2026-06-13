@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
+from sqlalchemy import case
 
 from models import Category, ChessGame, Favorite, db
 
@@ -61,11 +62,30 @@ def list_games():
     }
     if sort_by not in sort_column_map:
         sort_by = "id"
-    sort_column = sort_column_map[sort_by]
     if sort_order.lower() == "desc":
-        order_expr = sort_column.desc()
+        if sort_by == "difficulty":
+            difficulty_order = case(
+                (ChessGame.difficulty == "困难", 1),
+                (ChessGame.difficulty == "较难", 2),
+                (ChessGame.difficulty == "中等", 3),
+                (ChessGame.difficulty == "入门", 4),
+                else_=5,
+            )
+            order_expr = difficulty_order.asc()
+        else:
+            order_expr = sort_column_map[sort_by].desc()
     else:
-        order_expr = sort_column.asc()
+        if sort_by == "difficulty":
+            difficulty_order = case(
+                (ChessGame.difficulty == "入门", 1),
+                (ChessGame.difficulty == "中等", 2),
+                (ChessGame.difficulty == "较难", 3),
+                (ChessGame.difficulty == "困难", 4),
+                else_=5,
+            )
+            order_expr = difficulty_order.asc()
+        else:
+            order_expr = sort_column_map[sort_by].asc()
 
     query = ChessGame.query
 
