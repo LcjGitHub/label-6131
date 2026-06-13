@@ -53,6 +53,17 @@ const difficultyOptions = [
   ...DIFFICULTY_OPTIONS,
 ];
 
+const SORT_OPTIONS = [
+  { label: '按编号升序', value: 'id-asc' },
+  { label: '按编号降序', value: 'id-desc' },
+  { label: '按名称升序', value: 'name-asc' },
+  { label: '按名称降序', value: 'name-desc' },
+  { label: '按难度升序', value: 'difficulty-asc' },
+  { label: '按难度降序', value: 'difficulty-desc' },
+  { label: '按创建时间升序', value: 'created_at-asc' },
+  { label: '按创建时间降序', value: 'created_at-desc' },
+];
+
 /** 棋类列表页 */
 export default function GameList() {
   const [games, setGames] = useState<ChessGame[]>([]);
@@ -67,18 +78,20 @@ export default function GameList() {
   const [filterCategoryId, setFilterCategoryId] = useState<number>(ALL_CATEGORY_VALUE);
   const [keywordInput, setKeywordInput] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState<string>(ALL_DIFFICULTY_VALUE);
+  const [sortBy, setSortBy] = useState('id');
+  const [sortOrder, setSortOrder] = useState('asc');
   const [searchTrigger, setSearchTrigger] = useState(0);
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [form] = Form.useForm<ChessGamePayload>();
   const navigate = useNavigate();
 
-  const loadGames = async (p = page, ps = pageSize) => {
+  const loadGames = async (p = page, ps = pageSize, sb = sortBy, so = sortOrder) => {
     setLoading(true);
     try {
       const categoryId = filterCategoryId === ALL_CATEGORY_VALUE ? undefined : filterCategoryId;
       const difficulty = filterDifficulty === ALL_DIFFICULTY_VALUE ? undefined : filterDifficulty;
-      const data = await fetchGames(p, ps, categoryId, keywordInput, difficulty);
+      const data = await fetchGames(p, ps, categoryId, keywordInput, difficulty, sb, so);
       setGames(data.items);
       setTotal(data.total);
       setPage(data.page);
@@ -244,6 +257,14 @@ export default function GameList() {
     setSearchTrigger((prev) => prev + 1);
   };
 
+  const handleSortChange = (value: string) => {
+    const [sb, so] = value.split('-');
+    setSortBy(sb);
+    setSortOrder(so);
+    setPage(1);
+    loadGames(1, pageSize, sb, so);
+  };
+
   const categoryOptions = [
     { label: '全部分类', value: ALL_CATEGORY_VALUE },
     ...categories.map((c) => ({ label: c.name, value: c.id })),
@@ -277,6 +298,13 @@ export default function GameList() {
             onChange={setFilterCategoryId}
             options={categoryOptions}
             placeholder="按分类筛选"
+          />
+          <Select
+            style={{ minWidth: 160 }}
+            value={`${sortBy}-${sortOrder}`}
+            onChange={handleSortChange}
+            options={SORT_OPTIONS}
+            placeholder="排序方式"
           />
           <Button type="primary" onClick={handleSearch}>
             搜索

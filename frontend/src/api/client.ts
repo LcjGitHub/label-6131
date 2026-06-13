@@ -39,12 +39,14 @@ export async function deleteCategory(id: number): Promise<void> {
 }
 
 /**
- * 获取棋类列表（支持分页和筛选）
+ * 获取棋类列表（支持分页、筛选和排序）
  * @param page - 页码，默认 1
  * @param pageSize - 每页条数，默认 10
  * @param categoryId - 可选的分类 ID，用于按分类筛选
  * @param keyword - 可选的关键词，用于模糊匹配名称、起源、规则摘要
  * @param difficulty - 可选的难度，用于精确匹配难度
+ * @param sortBy - 排序字段，默认 id
+ * @param sortOrder - 排序方向，默认 asc
  * @returns 分页响应数据
  */
 export async function fetchGames(
@@ -53,8 +55,10 @@ export async function fetchGames(
   categoryId?: number | null,
   keyword?: string | null,
   difficulty?: string | null,
+  sortBy = 'id',
+  sortOrder = 'asc',
 ): Promise<PaginatedResponse<ChessGame>> {
-  const params: Record<string, string | number> = { page, page_size: pageSize };
+  const params: Record<string, string | number> = { page, page_size: pageSize, sort_by: sortBy, sort_order: sortOrder };
   if (categoryId) params.category_id = categoryId;
   if (keyword?.trim()) params.keyword = keyword.trim();
   if (difficulty?.trim()) params.difficulty = difficulty.trim();
