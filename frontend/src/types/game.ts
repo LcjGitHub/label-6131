@@ -41,3 +41,12 @@ export interface Favorite {
   created_at?: string;
   game: ChessGame | null;
 }
+
+/** 批量获取中存在错误的条目 */
+export interface ChessGameError {
+  id: number;
+  error: string;
+}
+
+/** 批量获取响应条目（可能成功也可能失败） */
+export type ChessGameBatchItem = ChessGame | ChessGameError;

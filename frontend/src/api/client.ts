@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGamePayload, Favorite } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -58,10 +58,10 @@ export async function fetchGame(id: number): Promise<ChessGame> {
 /**
  * 批量获取多条棋类详情（最多3条）
  * @param ids - 棋类 ID 数组
- * @returns 棋类详情数组
+ * @returns 棋类详情数组（可能包含带 error 字段的错误条目
  */
-export async function fetchGamesBatch(ids: number[]): Promise<ChessGame[]> {
-  const { data } = await client.get<ChessGame[]>('/games/batch', {
+export async function fetchGamesBatch(ids: number[]): Promise<ChessGameBatchItem[]> {
+  const { data } = await client.get<ChessGameBatchItem[]>('/games/batch', {
     params: { ids: ids.join(',') },
   });
   return data;
