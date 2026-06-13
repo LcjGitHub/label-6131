@@ -119,6 +119,20 @@ def _assign_categories_to_orphans(name_to_id: dict[str, int]) -> None:
                 break
 
 
+def _backfill_board_sizes() -> None:
+    """
+    按棋类名称匹配，为已有种子棋类补全缺失的棋盘规格（仅在当前为空时写入）。
+
+    @returns {None}
+    """
+    name_to_board_size = {item["name"]: item.get("board_size", "") for item in SEED_GAMES}
+    for game in ChessGame.query.all():
+        if (not game.board_size) and game.name in name_to_board_size:
+            target = name_to_board_size[game.name]
+            if target:
+                game.board_size = target
+
+
 def _seed_games(name_to_id: dict[str, int]) -> None:
     """
     若数据库为空则写入种子棋类。
@@ -136,11 +150,12 @@ def _seed_games(name_to_id: dict[str, int]) -> None:
 
 def seed_database() -> None:
     """
-     启动时补全默认分类、为无分类棋类分配分类、写入种子数据。
+     启动时补全默认分类、为无分类棋类分配分类、补全缺失的棋盘规格、写入种子数据。
 
      @returns {None}
      """
     name_to_id = _ensure_categories()
     _assign_categories_to_orphans(name_to_id)
+    _backfill_board_sizes()
     _seed_games(name_to_id)
     db.session.commit()
