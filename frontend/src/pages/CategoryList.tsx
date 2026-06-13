@@ -5,6 +5,7 @@ import {
   Input,
   List,
   Modal,
+  Pagination,
   Popconfirm,
   Space,
   Spin,
@@ -21,16 +22,22 @@ const { Paragraph, Text } = Typography;
 /** 分类管理页 */
 export default function CategoryList() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm<CategoryPayload>();
 
-  const loadCategories = async () => {
+  const loadCategories = async (p = page, ps = pageSize) => {
     setLoading(true);
     try {
-      const data = await fetchCategories();
-      setCategories(data);
+      const data = await fetchCategories(p, ps);
+      setCategories(data.items);
+      setTotal(data.total);
+      setPage(data.page);
+      setPageSize(data.page_size);
     } catch {
       message.error('加载分类列表失败');
     } finally {
@@ -54,7 +61,7 @@ export default function CategoryList() {
       await createCategory(values);
       message.success('创建成功');
       setModalOpen(false);
-      await loadCategories();
+      await loadCategories(1, pageSize);
     } catch (err) {
       if (axiosIsError(err)) {
         message.error(err.response?.data?.error ?? '操作失败');
@@ -68,7 +75,10 @@ export default function CategoryList() {
     try {
       await deleteCategory(id);
       message.success('删除成功');
-      await loadCategories();
+      const newTotal = total - 1;
+      const maxPage = Math.max(1, Math.ceil(newTotal / pageSize));
+      const targetPage = Math.min(page, maxPage);
+      await loadCategories(targetPage, pageSize);
     } catch (err) {
       if (axiosIsError(err)) {
         message.error(err.response?.data?.error ?? '删除失败');
@@ -87,7 +97,7 @@ export default function CategoryList() {
   return (
     <>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-        <Text type="secondary">共 {categories.length} 个分类</Text>
+        <Text type="secondary">共 {total} 个分类</Text>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           新增分类
         </Button>
@@ -127,6 +137,18 @@ export default function CategoryList() {
           </List.Item>
         )}
       />
+
+      <div style={{ marginTop: 16, textAlign: 'right' }}>
+        <Pagination
+          current={page}
+          pageSize={pageSize}
+          total={total}
+          showSizeChanger
+          showQuickJumper
+          showTotal={(t) => `共 ${t} 条`}
+          onChange={(p, ps) => loadCategories(p, ps)}
+        />
+      </div>
 
       <Modal
         title="新增分类"

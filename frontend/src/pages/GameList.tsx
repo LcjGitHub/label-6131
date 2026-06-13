@@ -85,8 +85,8 @@ export default function GameList() {
 
   const loadCategories = async () => {
     try {
-      const data = await fetchCategories();
-      setCategories(data);
+      const data = await fetchCategories(1, 100);
+      setCategories(data.items);
     } catch {
       message.error('加载分类列表失败');
     }

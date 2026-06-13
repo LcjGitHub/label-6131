@@ -11,9 +11,21 @@ categories_bp = Blueprint("categories", __name__, url_prefix="/api/categories")
 
 @categories_bp.get("")
 def list_categories():
-    """获取全部分类列表。"""
-    categories = Category.query.order_by(Category.id.asc()).all()
-    return jsonify([cat.to_dict() for cat in categories])
+    """获取分类列表（支持分页）。"""
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 10, type=int)
+    page = max(page, 1)
+    page_size = max(min(page_size, 100), 1)
+
+    query = Category.query.order_by(Category.id.asc())
+    total = query.count()
+    categories = query.offset((page - 1) * page_size).limit(page_size).all()
+    return jsonify({
+        "items": [cat.to_dict() for cat in categories],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    })
 
 
 @categories_bp.post("")

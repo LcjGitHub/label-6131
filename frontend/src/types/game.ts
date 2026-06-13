@@ -57,6 +57,14 @@ export interface OriginRankItem {
   count: number;
 }
 
+/** 分页响应数据 */
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 /** 数据统计概览 */
 export interface StatsOverview {
   total_games: number;

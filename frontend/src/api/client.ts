@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, StatsOverview } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, PaginatedResponse, StatsOverview } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -8,11 +8,15 @@ const client = axios.create({
 });
 
 /**
- * 获取全部分类列表
- * @returns 分类数组
+ * 获取分类列表（支持分页）
+ * @param page - 页码，默认 1
+ * @param pageSize - 每页条数，默认 10
+ * @returns 分页响应数据
  */
-export async function fetchCategories(): Promise<Category[]> {
-  const { data } = await client.get<Category[]>('/categories');
+export async function fetchCategories(page = 1, pageSize = 10): Promise<PaginatedResponse<Category>> {
+  const { data } = await client.get<PaginatedResponse<Category>>('/categories', {
+    params: { page, page_size: pageSize },
+  });
   return data;
 }
 
