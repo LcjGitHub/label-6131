@@ -31,6 +31,17 @@ export async function createCategory(payload: CategoryPayload): Promise<Category
 }
 
 /**
+ * 更新分类名称
+ * @param id - 分类 ID
+ * @param payload - 更新数据
+ * @returns 更新后分类
+ */
+export async function updateCategory(id: number, payload: CategoryPayload): Promise<Category> {
+  const { data } = await client.put<Category>(`/categories/${id}`, payload);
+  return data;
+}
+
+/**
  * 删除分类
  * @param id - 分类 ID
  */

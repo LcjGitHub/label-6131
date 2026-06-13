@@ -151,6 +151,89 @@ class TestListCategories:
         assert ids == sorted(ids)
 
 
+class TestUpdateCategory:
+    """更新分类接口测试。"""
+
+    def test_update_category_success(self, client):
+        """正常更新分类名称。"""
+        create_resp = _create_category(client, name="旧名称")
+        category_id = create_resp.get_json()["id"]
+
+        response = client.put(f"{BASE_URL}/{category_id}", json={"name": "新名称"})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["name"] == "新名称"
+        assert data["id"] == category_id
+
+        list_resp = client.get(BASE_URL)
+        list_data = list_resp.get_json()
+        names = [item["name"] for item in list_data["items"]]
+        assert "新名称" in names
+        assert "旧名称" not in names
+
+    def test_update_category_same_name_success(self, client):
+        """更新为相同名称应成功。"""
+        create_resp = _create_category(client, name="相同名称")
+        category_id = create_resp.get_json()["id"]
+
+        response = client.put(f"{BASE_URL}/{category_id}", json={"name": "相同名称"})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["name"] == "相同名称"
+
+    def test_update_category_not_found(self, client):
+        """更新不存在的分类编号应返回 404 错误。"""
+        response = client.put(f"{BASE_URL}/99999", json={"name": "测试"})
+        assert response.status_code == 404
+        data = response.get_json()
+        assert "error" in data
+        assert "不存在" in data["error"]
+
+    def test_update_category_empty_name_error(self, client):
+        """空名称更新应返回 400 错误。"""
+        create_resp = _create_category(client, name="原分类")
+        category_id = create_resp.get_json()["id"]
+
+        response = client.put(f"{BASE_URL}/{category_id}", json={"name": ""})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+        assert "必填项" in data["error"]
+
+    def test_update_category_whitespace_name_error(self, client):
+        """空白名称更新应返回 400 错误。"""
+        create_resp = _create_category(client, name="原分类2")
+        category_id = create_resp.get_json()["id"]
+
+        response = client.put(f"{BASE_URL}/{category_id}", json={"name": "   "})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+        assert "必填项" in data["error"]
+
+    def test_update_category_duplicate_name_error(self, client):
+        """更新为其他分类已有的名称应返回 409 错误。"""
+        _create_category(client, name="已存在分类")
+        create_resp = _create_category(client, name="待更新分类")
+        category_id = create_resp.get_json()["id"]
+
+        response = client.put(f"{BASE_URL}/{category_id}", json={"name": "已存在分类"})
+        assert response.status_code == 409
+        data = response.get_json()
+        assert "error" in data
+        assert "已存在" in data["error"]
+
+    def test_update_category_name_trimmed(self, client):
+        """更新名称前后空格应被去除。"""
+        create_resp = _create_category(client, name="原名称")
+        category_id = create_resp.get_json()["id"]
+
+        response = client.put(f"{BASE_URL}/{category_id}", json={"name": "  去空格  "})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["name"] == "去空格"
+
+
 class TestDeleteCategory:
     """删除分类接口测试。"""
 

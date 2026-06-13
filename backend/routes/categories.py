@@ -46,6 +46,28 @@ def create_category():
     return jsonify(category.to_dict()), 201
 
 
+@categories_bp.put("/<int:category_id>")
+def update_category(category_id: int):
+    """更新分类名称。"""
+    category = db.session.get(Category, category_id)
+    if not category:
+        return jsonify({"error": "分类不存在"}), 404
+
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+
+    if not name:
+        return jsonify({"error": "分类名称为必填项"}), 400
+
+    existing = Category.query.filter(Category.name == name, Category.id != category_id).first()
+    if existing:
+        return jsonify({"error": "分类名称已存在"}), 409
+
+    category.name = name
+    db.session.commit()
+    return jsonify(category.to_dict())
+
+
 @categories_bp.delete("/<int:category_id>")
 def delete_category(category_id: int):
     """删除分类。"""

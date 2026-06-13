@@ -12,9 +12,9 @@ import {
   Typography,
   message,
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 
-import { createCategory, deleteCategory, fetchCategories } from '../api/client';
+import { createCategory, deleteCategory, fetchCategories, updateCategory } from '../api/client';
 import type { Category, CategoryPayload } from '../types/game';
 
 const { Paragraph, Text } = Typography;
@@ -28,6 +28,7 @@ export default function CategoryList() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [form] = Form.useForm<CategoryPayload>();
 
   const loadCategories = async (p = page, ps = pageSize) => {
@@ -50,18 +51,36 @@ export default function CategoryList() {
   }, []);
 
   const openCreate = () => {
+    setEditingCategory(null);
     form.resetFields();
+    setModalOpen(true);
+  };
+
+  const openEdit = (category: Category) => {
+    setEditingCategory(category);
+    form.setFieldsValue({ name: category.name });
     setModalOpen(true);
   };
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+
+      if (editingCategory && values.name.trim() === editingCategory.name) {
+        setModalOpen(false);
+        return;
+      }
+
       setSubmitting(true);
-      await createCategory(values);
-      message.success('创建成功');
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, values);
+        message.success('更新成功');
+      } else {
+        await createCategory(values);
+        message.success('创建成功');
+      }
       setModalOpen(false);
-      await loadCategories(1, pageSize);
+      await loadCategories(editingCategory ? page : 1, pageSize);
     } catch (err) {
       if (axiosIsError(err)) {
         message.error(err.response?.data?.error ?? '操作失败');
@@ -110,6 +129,14 @@ export default function CategoryList() {
           <List.Item
             key={item.id}
             actions={[
+              <Button
+                key="edit"
+                type="link"
+                icon={<EditOutlined />}
+                onClick={() => openEdit(item)}
+              >
+                编辑
+              </Button>,
               <Popconfirm
                 key="delete"
                 title="确定删除该分类？"
@@ -151,7 +178,7 @@ export default function CategoryList() {
       </div>
 
       <Modal
-        title="新增分类"
+        title={editingCategory ? '编辑分类' : '新增分类'}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={handleSubmit}
