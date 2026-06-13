@@ -7,6 +7,7 @@ import {
   Input,
   List,
   Modal,
+  Pagination,
   Popconfirm,
   Select,
   Space,
@@ -56,6 +57,9 @@ const difficultyOptions = [
 export default function GameList() {
   const [games, setGames] = useState<ChessGame[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ChessGame | null>(null);
@@ -69,13 +73,16 @@ export default function GameList() {
   const [form] = Form.useForm<ChessGamePayload>();
   const navigate = useNavigate();
 
-  const loadGames = async () => {
+  const loadGames = async (p = page, ps = pageSize) => {
     setLoading(true);
     try {
       const categoryId = filterCategoryId === ALL_CATEGORY_VALUE ? undefined : filterCategoryId;
       const difficulty = filterDifficulty === ALL_DIFFICULTY_VALUE ? undefined : filterDifficulty;
-      const data = await fetchGames(categoryId, keywordInput, difficulty);
-      setGames(data);
+      const data = await fetchGames(p, ps, categoryId, keywordInput, difficulty);
+      setGames(data.items);
+      setTotal(data.total);
+      setPage(data.page);
+      setPageSize(data.page_size);
     } catch {
       message.error('加载棋类列表失败');
     } finally {
@@ -171,7 +178,7 @@ export default function GameList() {
         message.success('创建成功');
       }
       setModalOpen(false);
-      await loadGames();
+      await loadGames(editing ? page : 1, pageSize);
     } catch (err) {
       if (axiosIsError(err)) {
         message.error(err.response?.data?.error ?? '操作失败');
@@ -185,7 +192,10 @@ export default function GameList() {
     try {
       await deleteGame(id);
       message.success('删除成功');
-      await loadGames();
+      const newTotal = total - 1;
+      const maxPage = Math.max(1, Math.ceil(newTotal / pageSize));
+      const targetPage = Math.min(page, maxPage);
+      await loadGames(targetPage, pageSize);
     } catch {
       message.error('删除失败');
     }
@@ -221,6 +231,7 @@ export default function GameList() {
   };
 
   const handleSearch = () => {
+    setPage(1);
     setSearchTrigger((prev) => prev + 1);
   };
 
@@ -228,6 +239,7 @@ export default function GameList() {
     setKeywordInput('');
     setFilterDifficulty(ALL_DIFFICULTY_VALUE);
     setFilterCategoryId(ALL_CATEGORY_VALUE);
+    setPage(1);
     setSearchTrigger((prev) => prev + 1);
   };
 
@@ -242,7 +254,7 @@ export default function GameList() {
     <>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
         <Space wrap>
-          <Text type="secondary">共 {games.length} 种冷门棋类</Text>
+          <Text type="secondary">共 {total} 种冷门棋类</Text>
           <Input
             style={{ minWidth: 200 }}
             placeholder="搜索名称、起源、规则摘要"
@@ -350,6 +362,18 @@ export default function GameList() {
           </List.Item>
         )}
       />
+
+      <div style={{ marginTop: 16, textAlign: 'right' }}>
+        <Pagination
+          current={page}
+          pageSize={pageSize}
+          total={total}
+          showSizeChanger
+          showQuickJumper
+          showTotal={(t) => `共 ${t} 条`}
+          onChange={(p, ps) => loadGames(p, ps)}
+        />
+      </div>
 
       <Modal
         title={editing ? '编辑棋类' : '新增棋类'}

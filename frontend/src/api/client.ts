@@ -39,22 +39,26 @@ export async function deleteCategory(id: number): Promise<void> {
 }
 
 /**
- * 获取全部棋类列表
+ * 获取棋类列表（支持分页和筛选）
+ * @param page - 页码，默认 1
+ * @param pageSize - 每页条数，默认 10
  * @param categoryId - 可选的分类 ID，用于按分类筛选
  * @param keyword - 可选的关键词，用于模糊匹配名称、起源、规则摘要
  * @param difficulty - 可选的难度，用于精确匹配难度
- * @returns 棋类数组
+ * @returns 分页响应数据
  */
 export async function fetchGames(
+  page = 1,
+  pageSize = 10,
   categoryId?: number | null,
   keyword?: string | null,
   difficulty?: string | null,
-): Promise<ChessGame[]> {
-  const params: Record<string, string | number> = {};
+): Promise<PaginatedResponse<ChessGame>> {
+  const params: Record<string, string | number> = { page, page_size: pageSize };
   if (categoryId) params.category_id = categoryId;
   if (keyword?.trim()) params.keyword = keyword.trim();
   if (difficulty?.trim()) params.difficulty = difficulty.trim();
-  const { data } = await client.get<ChessGame[]>('/games', { params });
+  const { data } = await client.get<PaginatedResponse<ChessGame>>('/games', { params });
   return data;
 }
 

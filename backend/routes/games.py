@@ -42,10 +42,14 @@ def _resolve_category_id(raw) -> tuple[int | None, str | None]:
 
 @games_bp.get("")
 def list_games():
-    """获取全部棋类列表，支持按分类、关键词、难度筛选。"""
+    """获取棋类列表，支持按分类、关键词、难度筛选及分页。"""
     category_id = request.args.get("category_id")
     keyword = request.args.get("keyword")
     difficulty = request.args.get("difficulty")
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 10, type=int)
+    page = max(page, 1)
+    page_size = max(min(page_size, 100), 1)
 
     query = ChessGame.query
 
@@ -70,8 +74,14 @@ def list_games():
     if difficulty and difficulty.strip():
         query = query.filter(ChessGame.difficulty == difficulty.strip())
 
-    games = query.order_by(ChessGame.id.asc()).all()
-    return jsonify([game.to_dict() for game in games])
+    total = query.count()
+    games = query.order_by(ChessGame.id.asc()).offset((page - 1) * page_size).limit(page_size).all()
+    return jsonify({
+        "items": [game.to_dict() for game in games],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    })
 
 
 @games_bp.get("/<int:game_id>")
