@@ -21,96 +21,50 @@ import {
   addFavorite,
   createGame,
   deleteGame,
-  fetchCategories,
   fetchFavoriteIds,
-  fetchGames,
   removeFavorite,
   updateGame,
 } from '../api/client';
-import type { Category, ChessGame, ChessGamePayload } from '../types/game';
+import type { ChessGame, ChessGamePayload } from '../types/game';
+import { useGameList } from '../hooks/useGameList';
 
 const { Paragraph, Text } = Typography;
 
-const DIFFICULTY_OPTIONS = [
-  { label: '入门', value: '入门' },
-  { label: '中等', value: '中等' },
-  { label: '较难', value: '较难' },
-  { label: '困难', value: '困难' },
-];
-
-const difficultyColor: Record<string, string> = {
-  入门: 'green',
-  中等: 'blue',
-  较难: 'orange',
-  困难: 'red',
-};
-
-const ALL_CATEGORY_VALUE = 0;
-const ALL_DIFFICULTY_VALUE = '';
-
-const difficultyOptions = [
-  { label: '全部难度', value: ALL_DIFFICULTY_VALUE },
-  ...DIFFICULTY_OPTIONS,
-];
-
-const SORT_OPTIONS = [
-  { label: '按编号升序', value: 'id-asc' },
-  { label: '按编号降序', value: 'id-desc' },
-  { label: '按名称升序', value: 'name-asc' },
-  { label: '按名称降序', value: 'name-desc' },
-  { label: '按难度升序', value: 'difficulty-asc' },
-  { label: '按难度降序', value: 'difficulty-desc' },
-  { label: '按创建时间升序', value: 'created_at-asc' },
-  { label: '按创建时间降序', value: 'created_at-desc' },
-];
-
 /** 棋类列表页 */
 export default function GameList() {
-  const [games, setGames] = useState<ChessGame[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [loading, setLoading] = useState(true);
+  const {
+    games,
+    total,
+    page,
+    pageSize,
+    loading,
+    filterCategoryId,
+    setFilterCategoryId,
+    keywordInput,
+    setKeywordInput,
+    filterDifficulty,
+    setFilterDifficulty,
+    currentSortValue,
+    handleSearch,
+    handleClear,
+    handleSortChange,
+    handlePaginationChange,
+    reloadGames,
+    categoryOptions,
+    gameCategoryOptions,
+    DIFFICULTY_OPTIONS,
+    SORT_OPTIONS,
+    difficultyOptions,
+    difficultyColor,
+  } = useGameList();
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ChessGame | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [filterCategoryId, setFilterCategoryId] = useState<number>(ALL_CATEGORY_VALUE);
-  const [keywordInput, setKeywordInput] = useState('');
-  const [filterDifficulty, setFilterDifficulty] = useState<string>(ALL_DIFFICULTY_VALUE);
-  const [sortBy, setSortBy] = useState('id');
-  const [sortOrder, setSortOrder] = useState('asc');
-  const [searchTrigger, setSearchTrigger] = useState(0);
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [form] = Form.useForm<ChessGamePayload>();
   const navigate = useNavigate();
-
-  const loadGames = async (p = page, ps = pageSize, sb = sortBy, so = sortOrder) => {
-    setLoading(true);
-    try {
-      const categoryId = filterCategoryId === ALL_CATEGORY_VALUE ? undefined : filterCategoryId;
-      const difficulty = filterDifficulty === ALL_DIFFICULTY_VALUE ? undefined : filterDifficulty;
-      const data = await fetchGames(p, ps, categoryId, keywordInput, difficulty, sb, so);
-      setGames(data.items);
-      setTotal(data.total);
-      setPage(data.page);
-      setPageSize(data.page_size);
-    } catch {
-      message.error('加载棋类列表失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadCategories = async () => {
-    try {
-      const data = await fetchCategories(1, 100);
-      setCategories(data.items);
-    } catch {
-      message.error('加载分类列表失败');
-    }
-  };
 
   const loadFavoriteIds = async () => {
     try {
@@ -120,6 +74,11 @@ export default function GameList() {
       message.error('加载收藏状态失败');
     }
   };
+
+  // 组件挂载时加载收藏状态（分类和列表数据已在 useGameList 中加载）
+  useEffect(() => {
+    loadFavoriteIds();
+  }, []);
 
   const toggleFavorite = async (gameId: number) => {
     try {
@@ -146,15 +105,6 @@ export default function GameList() {
       }
     }
   };
-
-  useEffect(() => {
-    loadCategories();
-    loadFavoriteIds();
-  }, []);
-
-  useEffect(() => {
-    loadGames();
-  }, [searchTrigger]);
 
   const openCreate = () => {
     setEditing(null);
@@ -192,7 +142,7 @@ export default function GameList() {
         message.success('创建成功');
       }
       setModalOpen(false);
-      await loadGames(editing ? page : 1, pageSize);
+      await reloadGames(editing ? page : 1, pageSize);
     } catch (err) {
       if (axiosIsError(err)) {
         message.error(err.response?.data?.error ?? '操作失败');
@@ -209,7 +159,7 @@ export default function GameList() {
       const newTotal = total - 1;
       const maxPage = Math.max(1, Math.ceil(newTotal / pageSize));
       const targetPage = Math.min(page, maxPage);
-      await loadGames(targetPage, pageSize);
+      await reloadGames(targetPage, pageSize);
     } catch {
       message.error('删除失败');
     }
@@ -244,36 +194,6 @@ export default function GameList() {
     navigate(`/compare?ids=${ids}`);
   };
 
-  const handleSearch = () => {
-    setPage(1);
-    setSearchTrigger((prev) => prev + 1);
-  };
-
-  const handleClear = () => {
-    setKeywordInput('');
-    setFilterDifficulty(ALL_DIFFICULTY_VALUE);
-    setFilterCategoryId(ALL_CATEGORY_VALUE);
-    setSortBy('id');
-    setSortOrder('asc');
-    setPage(1);
-    setSearchTrigger((prev) => prev + 1);
-  };
-
-  const handleSortChange = (value: string) => {
-    const [sb, so] = value.split('-');
-    setSortBy(sb);
-    setSortOrder(so);
-    setPage(1);
-    loadGames(1, pageSize, sb, so);
-  };
-
-  const categoryOptions = [
-    { label: '全部分类', value: ALL_CATEGORY_VALUE },
-    ...categories.map((c) => ({ label: c.name, value: c.id })),
-  ];
-
-  const gameCategoryOptions = categories.map((c) => ({ label: c.name, value: c.id }));
-
   return (
     <>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
@@ -303,7 +223,7 @@ export default function GameList() {
           />
           <Select
             style={{ minWidth: 160 }}
-            value={`${sortBy}-${sortOrder}`}
+            value={currentSortValue}
             onChange={handleSortChange}
             options={SORT_OPTIONS}
             placeholder="排序方式"
@@ -405,7 +325,7 @@ export default function GameList() {
           showSizeChanger
           showQuickJumper
           showTotal={(t) => `共 ${t} 条`}
-          onChange={(p, ps) => loadGames(p, ps)}
+          onChange={handlePaginationChange}
         />
       </div>
 

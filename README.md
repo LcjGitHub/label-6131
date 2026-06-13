@@ -66,6 +66,7 @@ npm run dev
 | GET    | /api/games          | 获取列表（支持 `sort_by` 和 `sort_order` 排序参数，详见下方说明） |
 | GET    | /api/games/:id      | 获取详情       |
 | GET    | /api/games/:id/neighbors | 获取当前棋类的上一条和下一条（返回 `{ prev, next }`，每项为 `{ id, name }` 或 `null`） |
+| GET    | /api/games/:id/similar | 根据编号查询同难度推荐棋类（排除当前条目，最多返回 3 条，每项为 `{ id, name }`） |
 | GET    | /api/games/batch?ids=1,2,3 | 批量获取多条棋类详情（最多 3 个，返回按传入顺序排列，不存在的编号会包含 `error` 字段） |
 | POST   | /api/games          | 创建条目       |
 | PUT    | /api/games/:id      | 更新条目       |
@@ -74,6 +75,18 @@ npm run dev
 | GET    | /api/favorites/ids   | 获取已收藏棋类 ID 列表 |
 | POST   | /api/favorites       | 添加收藏（body: `{ game_id }`） |
 | DELETE | /api/favorites/:game_id | 取消收藏     |
+
+### 获取列表接口排序参数
+
+`GET /api/games` 支持以下排序参数：
+
+| 参数         | 说明     | 可选值                                       | 默认值  |
+|--------------|----------|----------------------------------------------|---------|
+| `sort_by`    | 排序字段 | `id`（编号）、`name`（名称）、`difficulty`（难度）、`created_at`（创建时间） | `id`    |
+| `sort_order` | 排序方向 | `asc`（升序）、`desc`（降序）                | `asc`   |
+
+- 按难度排序时按语义顺序排列：入门 → 中等 → 较难 → 困难（升序），降序则反向
+- 示例：`GET /api/games?sort_by=name&sort_order=asc` 按名称升序
 
 ## 技术栈
 
