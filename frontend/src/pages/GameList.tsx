@@ -45,9 +45,10 @@ const difficultyColor: Record<string, string> = {
 };
 
 const ALL_CATEGORY_VALUE = 0;
+const ALL_DIFFICULTY_VALUE = '';
 
 const difficultyOptions = [
-  { label: '全部难度', value: undefined },
+  { label: '全部难度', value: ALL_DIFFICULTY_VALUE },
   ...DIFFICULTY_OPTIONS,
 ];
 
@@ -61,8 +62,8 @@ export default function GameList() {
   const [submitting, setSubmitting] = useState(false);
   const [filterCategoryId, setFilterCategoryId] = useState<number>(ALL_CATEGORY_VALUE);
   const [keywordInput, setKeywordInput] = useState('');
-  const [keyword, setKeyword] = useState('');
-  const [filterDifficulty, setFilterDifficulty] = useState<string | undefined>();
+  const [filterDifficulty, setFilterDifficulty] = useState<string>(ALL_DIFFICULTY_VALUE);
+  const [searchTrigger, setSearchTrigger] = useState(0);
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [form] = Form.useForm<ChessGamePayload>();
@@ -72,7 +73,8 @@ export default function GameList() {
     setLoading(true);
     try {
       const categoryId = filterCategoryId === ALL_CATEGORY_VALUE ? undefined : filterCategoryId;
-      const data = await fetchGames(categoryId, keyword, filterDifficulty);
+      const difficulty = filterDifficulty === ALL_DIFFICULTY_VALUE ? undefined : filterDifficulty;
+      const data = await fetchGames(categoryId, keywordInput, difficulty);
       setGames(data);
     } catch {
       message.error('加载棋类列表失败');
@@ -132,7 +134,7 @@ export default function GameList() {
 
   useEffect(() => {
     loadGames();
-  }, [filterCategoryId, keyword, filterDifficulty]);
+  }, [searchTrigger]);
 
   const openCreate = () => {
     setEditing(null);
@@ -219,14 +221,14 @@ export default function GameList() {
   };
 
   const handleSearch = () => {
-    setKeyword(keywordInput);
+    setSearchTrigger((prev) => prev + 1);
   };
 
   const handleClear = () => {
     setKeywordInput('');
-    setKeyword('');
-    setFilterDifficulty(undefined);
+    setFilterDifficulty(ALL_DIFFICULTY_VALUE);
     setFilterCategoryId(ALL_CATEGORY_VALUE);
+    setSearchTrigger((prev) => prev + 1);
   };
 
   const categoryOptions = [
@@ -241,13 +243,13 @@ export default function GameList() {
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
         <Space wrap>
           <Text type="secondary">共 {games.length} 种冷门棋类</Text>
-          <Input.Search
+          <Input
             style={{ minWidth: 200 }}
             placeholder="搜索名称、起源、规则摘要"
             value={keywordInput}
             onChange={(e) => setKeywordInput(e.target.value)}
-            onSearch={handleSearch}
-            enterButton
+            onPressEnter={handleSearch}
+            allowClear
           />
           <Select
             style={{ minWidth: 120 }}
