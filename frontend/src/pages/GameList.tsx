@@ -19,6 +19,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined, StarFilled, StarOutlined } 
 
 import {
   addFavorite,
+  batchDeleteGames,
   createGame,
   deleteGame,
   fetchFavoriteIds,
@@ -63,6 +64,8 @@ export default function GameList() {
   const [submitting, setSubmitting] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [batchDeleteModalOpen, setBatchDeleteModalOpen] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
   const [form] = Form.useForm<ChessGamePayload>();
   const navigate = useNavigate();
 
@@ -171,14 +174,45 @@ export default function GameList() {
       if (next.has(gameId)) {
         next.delete(gameId);
       } else {
-        if (next.size >= 3) {
-          message.warning('最多只能选择3个棋类进行对比');
-          return prev;
-        }
         next.add(gameId);
       }
       return next;
     });
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedIds.size < 1) {
+      message.warning('请至少选择1条记录');
+      return;
+    }
+    setBatchDeleteModalOpen(true);
+  };
+
+  const confirmBatchDelete = async () => {
+    try {
+      setBatchDeleting(true);
+      const ids = Array.from(selectedIds);
+      const result = await batchDeleteGames(ids);
+      if (result.failed.length > 0) {
+        const failedNames = result.failed.map((f) => `编号 ${f.id}`).join('、');
+        message.warning(`${result.message}，失败：${failedNames}`);
+      } else {
+        message.success(result.message);
+      }
+      setSelectedIds(new Set());
+      setBatchDeleteModalOpen(false);
+      const newTotal = total - result.success_count;
+      const maxPage = Math.max(1, Math.ceil(newTotal / pageSize));
+      const targetPage = Math.min(page, maxPage);
+      await reloadGames(targetPage, pageSize);
+      await loadFavoriteIds();
+    } catch (err) {
+      if (axiosIsError(err)) {
+        message.error(err.response?.data?.error ?? '批量删除失败');
+      }
+    } finally {
+      setBatchDeleting(false);
+    }
   };
 
   const startCompare = () => {
@@ -192,6 +226,10 @@ export default function GameList() {
     }
     const ids = Array.from(selectedIds).join(',');
     navigate(`/compare?ids=${ids}`);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
   };
 
   return (
@@ -237,9 +275,20 @@ export default function GameList() {
           <Button
             type="primary"
             onClick={startCompare}
-            disabled={selectedIds.size < 1}
+            disabled={selectedIds.size < 1 || selectedIds.size > 3}
           >
-            开始对比（已选 {selectedIds.size}/3）
+            开始对比（已选 {selectedIds.size}）
+          </Button>
+          <Button
+            danger
+            onClick={handleBatchDelete}
+            disabled={selectedIds.size < 1}
+            icon={<DeleteOutlined />}
+          >
+            批量删除（已选 {selectedIds.size}）
+          </Button>
+          <Button onClick={clearSelection} disabled={selectedIds.size < 1}>
+            取消选择
           </Button>
         </Space>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
@@ -373,6 +422,22 @@ export default function GameList() {
             <Input placeholder="https://..." />
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="确认批量删除"
+        open={batchDeleteModalOpen}
+        onCancel={() => setBatchDeleteModalOpen(false)}
+        onOk={confirmBatchDelete}
+        confirmLoading={batchDeleting}
+        okText="确认删除"
+        okButtonProps={{ danger: true }}
+        cancelText="取消"
+      >
+        <p>确定要删除选中的 <strong>{selectedIds.size}</strong> 条棋类记录吗？</p>
+        <p style={{ color: '#faad14' }}>
+          删除后将同时清理对应的收藏记录，此操作不可恢复。
+        </p>
       </Modal>
     </>
   );

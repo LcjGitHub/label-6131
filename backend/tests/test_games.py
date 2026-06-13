@@ -212,6 +212,77 @@ class TestDeleteGame:
         assert "不存在" in data["error"]
 
 
+class TestBatchDeleteGames:
+    """批量删除棋类接口测试。"""
+
+    def test_batch_delete_success(self, client):
+        """批量删除棋类成功，同步清理收藏记录。"""
+        game1 = _create_game(client, name="批量删除1").get_json()
+        game2 = _create_game(client, name="批量删除2").get_json()
+        game3 = _create_game(client, name="批量删除3").get_json()
+
+        client.post("/api/favorites", json={"game_id": game1["id"]})
+        client.post("/api/favorites", json={"game_id": game2["id"]})
+
+        response = client.delete(f"{BASE_URL}/batch", json={"ids": [game1["id"], game2["id"], game3["id"]]})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success_count"] == 3
+        assert data["failed"] == []
+        assert "成功删除 3 个棋类" in data["message"]
+
+        for gid in [game1["id"], game2["id"], game3["id"]]:
+            assert client.get(f"{BASE_URL}/{gid}").status_code == 404
+
+        fav_resp = client.get("/api/favorites/ids")
+        fav_ids = fav_resp.get_json()
+        assert game1["id"] not in fav_ids
+        assert game2["id"] not in fav_ids
+
+    def test_batch_delete_partial_failure(self, client):
+        """部分棋类不存在时，成功删除存在的，返回失败列表。"""
+        game1 = _create_game(client, name="部分删除1").get_json()
+        game2 = _create_game(client, name="部分删除2").get_json()
+
+        response = client.delete(f"{BASE_URL}/batch", json={"ids": [game1["id"], 99999, game2["id"], 88888]})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success_count"] == 2
+        assert len(data["failed"]) == 2
+        failed_ids = [f["id"] for f in data["failed"]]
+        assert 99999 in failed_ids
+        assert 88888 in failed_ids
+
+    def test_batch_delete_empty_ids(self, client):
+        """空 ids 应返回 400 错误。"""
+        response = client.delete(f"{BASE_URL}/batch", json={"ids": []})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+
+    def test_batch_delete_missing_ids(self, client):
+        """缺少 ids 参数应返回 400 错误。"""
+        response = client.delete(f"{BASE_URL}/batch", json={})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+
+    def test_batch_delete_invalid_ids_format(self, client):
+        """ids 不是数组应返回 400 错误。"""
+        response = client.delete(f"{BASE_URL}/batch", json={"ids": "not-a-list"})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+
+    def test_batch_delete_invalid_id_value(self, client):
+        """包含无效编号值应返回 400 错误。"""
+        response = client.delete(f"{BASE_URL}/batch", json={"ids": [1, "abc", 3]})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+        assert "abc" in data["error"]
+
+
 class TestListGames:
     """棋类列表查询接口测试。"""
 

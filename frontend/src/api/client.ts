@@ -149,6 +149,20 @@ export async function deleteGame(id: number): Promise<void> {
 }
 
 /**
+ * 批量删除棋类条目
+ * @param ids - 棋类 ID 数组
+ * @returns 批量删除结果
+ */
+export async function batchDeleteGames(ids: number[]): Promise<{
+  message: string;
+  success_count: number;
+  failed: Array<{ id: number; error: string }>;
+}> {
+  const { data } = await client.delete('/games/batch', { data: { ids } });
+  return data;
+}
+
+/**
  * 获取全部收藏列表（含棋类详情）
  * @returns 收藏条目数组
  */

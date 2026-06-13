@@ -305,3 +305,47 @@ def delete_game(game_id: int):
     db.session.delete(game)
     db.session.commit()
     return jsonify({"message": "删除成功"})
+
+
+@games_bp.delete("/batch")
+def delete_games_batch():
+    """批量删除棋类条目（同步清理对应收藏记录）。"""
+    data = request.get_json(silent=True) or {}
+    ids = data.get("ids", [])
+
+    if not ids:
+        return jsonify({"error": "请提供要删除的棋类编号列表 ids"}), 400
+
+    if not isinstance(ids, list):
+        return jsonify({"error": "ids 必须是数组格式"}), 400
+
+    parsed_ids: list[int] = []
+    for item in ids:
+        try:
+            parsed_ids.append(int(item))
+        except (ValueError, TypeError):
+            return jsonify({"error": f"无效的编号: {item}"}), 400
+
+    success_count = 0
+    failed: list[dict] = []
+
+    for game_id in parsed_ids:
+        game = db.session.get(ChessGame, game_id)
+        if not game:
+            failed.append({"id": game_id, "error": "棋类不存在"})
+            continue
+
+        try:
+            Favorite.query.filter_by(game_id=game_id).delete()
+            db.session.delete(game)
+            db.session.commit()
+            success_count += 1
+        except Exception as e:
+            db.session.rollback()
+            failed.append({"id": game_id, "error": str(e)})
+
+    return jsonify({
+        "message": f"成功删除 {success_count} 个棋类",
+        "success_count": success_count,
+        "failed": failed,
+    })
