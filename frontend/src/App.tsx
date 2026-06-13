@@ -1,12 +1,13 @@
 import { Layout, Menu, Typography } from 'antd';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { AppstoreOutlined, StarOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, BarChartOutlined, StarOutlined, UnorderedListOutlined } from '@ant-design/icons';
 
 import CategoryList from './pages/CategoryList';
 import FavoriteList from './pages/FavoriteList';
 import GameCompare from './pages/GameCompare';
 import GameDetail from './pages/GameDetail';
 import GameList from './pages/GameList';
+import StatsOverview from './pages/StatsOverview';
 
 const { Header, Content } = Layout;
 const { Title } = Typography;
@@ -42,6 +43,17 @@ export default function App() {
           onClick={({ key }) => navigate(key)}
           style={{ flex: 1, minWidth: 0, borderBottom: 'none' }}
         />
+        <a
+          href="#/stats"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate('/stats');
+          }}
+          style={{ color: '#fff', whiteSpace: 'nowrap' }}
+        >
+          <BarChartOutlined style={{ marginRight: 4 }} />
+          数据统计
+        </a>
       </Header>
       <Content style={{ padding: '24px', maxWidth: 960, margin: '0 auto', width: '100%' }}>
         <Routes>
@@ -50,6 +62,7 @@ export default function App() {
           <Route path="/categories" element={<CategoryList />} />
           <Route path="/games/:id" element={<GameDetail />} />
           <Route path="/compare" element={<GameCompare />} />
+          <Route path="/stats" element={<StatsOverview />} />
         </Routes>
       </Content>
     </Layout>

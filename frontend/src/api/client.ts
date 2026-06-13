@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, StatsOverview } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -130,4 +130,13 @@ export async function addFavorite(gameId: number): Promise<Favorite> {
  */
 export async function removeFavorite(gameId: number): Promise<void> {
   await client.delete(`/favorites/${gameId}`);
+}
+
+/**
+ * 获取数据统计概览
+ * @returns 统计概览数据
+ */
+export async function fetchStatsOverview(): Promise<StatsOverview> {
+  const { data } = await client.get<StatsOverview>('/stats/overview');
+  return data;
 }

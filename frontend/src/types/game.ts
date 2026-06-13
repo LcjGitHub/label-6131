@@ -50,3 +50,16 @@ export interface ChessGameError {
 
 /** 批量获取响应条目（可能成功也可能失败） */
 export type ChessGameBatchItem = ChessGame | ChessGameError;
+
+/** 起源地区排行条目 */
+export interface OriginRankItem {
+  origin: string;
+  count: number;
+}
+
+/** 数据统计概览 */
+export interface StatsOverview {
+  total_games: number;
+  difficulty_distribution: Record<string, number>;
+  origin_rank: OriginRankItem[];
+}
