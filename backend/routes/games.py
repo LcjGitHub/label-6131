@@ -42,15 +42,34 @@ def _resolve_category_id(raw) -> tuple[int | None, str | None]:
 
 @games_bp.get("")
 def list_games():
-    """获取全部棋类列表，支持按分类筛选。"""
+    """获取全部棋类列表，支持按分类、关键词、难度筛选。"""
     category_id = request.args.get("category_id")
+    keyword = request.args.get("keyword")
+    difficulty = request.args.get("difficulty")
+
     query = ChessGame.query
+
     if category_id and category_id != "":
         try:
             cat_id = int(category_id)
             query = query.filter_by(category_id=cat_id)
         except ValueError:
             pass
+
+    if keyword and keyword.strip():
+        keyword = keyword.strip()
+        keyword_pattern = f"%{keyword}%"
+        query = query.filter(
+            db.or_(
+                ChessGame.name.ilike(keyword_pattern),
+                ChessGame.origin.ilike(keyword_pattern),
+                ChessGame.summary.ilike(keyword_pattern),
+            )
+        )
+
+    if difficulty and difficulty.strip():
+        query = query.filter(ChessGame.difficulty == difficulty.strip())
+
     games = query.order_by(ChessGame.id.asc()).all()
     return jsonify([game.to_dict() for game in games])
 

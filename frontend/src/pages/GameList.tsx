@@ -46,6 +46,11 @@ const difficultyColor: Record<string, string> = {
 
 const ALL_CATEGORY_VALUE = 0;
 
+const difficultyOptions = [
+  { label: '全部难度', value: undefined },
+  ...DIFFICULTY_OPTIONS,
+];
+
 /** 棋类列表页 */
 export default function GameList() {
   const [games, setGames] = useState<ChessGame[]>([]);
@@ -55,6 +60,9 @@ export default function GameList() {
   const [editing, setEditing] = useState<ChessGame | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [filterCategoryId, setFilterCategoryId] = useState<number>(ALL_CATEGORY_VALUE);
+  const [keywordInput, setKeywordInput] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [filterDifficulty, setFilterDifficulty] = useState<string | undefined>();
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [form] = Form.useForm<ChessGamePayload>();
@@ -64,7 +72,7 @@ export default function GameList() {
     setLoading(true);
     try {
       const categoryId = filterCategoryId === ALL_CATEGORY_VALUE ? undefined : filterCategoryId;
-      const data = await fetchGames(categoryId);
+      const data = await fetchGames(categoryId, keyword, filterDifficulty);
       setGames(data);
     } catch {
       message.error('加载棋类列表失败');
@@ -124,7 +132,7 @@ export default function GameList() {
 
   useEffect(() => {
     loadGames();
-  }, [filterCategoryId]);
+  }, [filterCategoryId, keyword, filterDifficulty]);
 
   const openCreate = () => {
     setEditing(null);
@@ -210,6 +218,17 @@ export default function GameList() {
     navigate(`/compare?ids=${ids}`);
   };
 
+  const handleSearch = () => {
+    setKeyword(keywordInput);
+  };
+
+  const handleClear = () => {
+    setKeywordInput('');
+    setKeyword('');
+    setFilterDifficulty(undefined);
+    setFilterCategoryId(ALL_CATEGORY_VALUE);
+  };
+
   const categoryOptions = [
     { label: '全部分类', value: ALL_CATEGORY_VALUE },
     ...categories.map((c) => ({ label: c.name, value: c.id })),
@@ -220,8 +239,23 @@ export default function GameList() {
   return (
     <>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
-        <Space>
+        <Space wrap>
           <Text type="secondary">共 {games.length} 种冷门棋类</Text>
+          <Input.Search
+            style={{ minWidth: 200 }}
+            placeholder="搜索名称、起源、规则摘要"
+            value={keywordInput}
+            onChange={(e) => setKeywordInput(e.target.value)}
+            onSearch={handleSearch}
+            enterButton
+          />
+          <Select
+            style={{ minWidth: 120 }}
+            value={filterDifficulty}
+            onChange={setFilterDifficulty}
+            options={difficultyOptions}
+            placeholder="按难度筛选"
+          />
           <Select
             style={{ minWidth: 160 }}
             value={filterCategoryId}
@@ -229,6 +263,12 @@ export default function GameList() {
             options={categoryOptions}
             placeholder="按分类筛选"
           />
+          <Button type="primary" onClick={handleSearch}>
+            搜索
+          </Button>
+          <Button onClick={handleClear}>
+            清空
+          </Button>
           <Button
             type="primary"
             onClick={startCompare}

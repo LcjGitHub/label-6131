@@ -37,10 +37,19 @@ export async function deleteCategory(id: number): Promise<void> {
 /**
  * 获取全部棋类列表
  * @param categoryId - 可选的分类 ID，用于按分类筛选
+ * @param keyword - 可选的关键词，用于模糊匹配名称、起源、规则摘要
+ * @param difficulty - 可选的难度，用于精确匹配难度
  * @returns 棋类数组
  */
-export async function fetchGames(categoryId?: number | null): Promise<ChessGame[]> {
-  const params = categoryId ? { category_id: categoryId } : {};
+export async function fetchGames(
+  categoryId?: number | null,
+  keyword?: string | null,
+  difficulty?: string | null,
+): Promise<ChessGame[]> {
+  const params: Record<string, string | number> = {};
+  if (categoryId) params.category_id = categoryId;
+  if (keyword?.trim()) params.keyword = keyword.trim();
+  if (difficulty?.trim()) params.difficulty = difficulty.trim();
   const { data } = await client.get<ChessGame[]>('/games', { params });
   return data;
 }
