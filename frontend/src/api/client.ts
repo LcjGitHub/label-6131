@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, PaginatedResponse, SimilarGamesResponse, StatsOverview } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, PaginatedResponse, RecentView, SimilarGamesResponse, StatsOverview } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -206,5 +206,15 @@ export async function removeFavorite(gameId: number): Promise<void> {
  */
 export async function fetchStatsOverview(): Promise<StatsOverview> {
   const { data } = await client.get<StatsOverview>('/stats/overview');
+  return data;
+}
+
+export async function fetchRecentViews(): Promise<RecentView[]> {
+  const { data } = await client.get<RecentView[]>('/recent-views');
+  return data;
+}
+
+export async function addRecentView(gameId: number): Promise<RecentView> {
+  const { data } = await client.post<RecentView>('/recent-views', { game_id: gameId });
   return data;
 }

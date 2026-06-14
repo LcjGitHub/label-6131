@@ -44,6 +44,13 @@ export interface Favorite {
   game: ChessGame | null;
 }
 
+export interface RecentView {
+  id: number;
+  game_id: number;
+  viewed_at?: string;
+  game: ChessGame | null;
+}
+
 /** 批量获取中存在错误的条目 */
 export interface ChessGameError {
   id: number;

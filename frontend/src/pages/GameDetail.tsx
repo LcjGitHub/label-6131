@@ -4,7 +4,7 @@ import { Button, Descriptions, Spin, Tag, Tooltip, Typography, message } from 'a
 import { ArrowLeftOutlined, LeftOutlined, LinkOutlined, RightOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 
-import { fetchGame, fetchGameNeighbors, fetchSimilarGames } from '../api/client';
+import { fetchGame, fetchGameNeighbors, fetchSimilarGames, addRecentView } from '../api/client';
 import type { ChessGame, GameNeighbors, SimilarGamesResponse } from '../types/game';
 
 const { Title, Paragraph, Text } = Typography;
@@ -37,6 +37,7 @@ export default function GameDetail() {
         const gameId = Number(id);
         const gameData = await fetchGame(gameId);
         setGame(gameData);
+        addRecentView(gameId).catch(() => {});
         try {
           const neighborsData = await fetchGameNeighbors(gameId);
           setNeighbors(neighborsData);

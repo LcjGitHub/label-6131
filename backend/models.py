@@ -64,6 +64,36 @@ class Favorite(db.Model):
         }
 
 
+class RecentView(db.Model):
+    """最近浏览记录。"""
+
+    __tablename__ = "recent_views"
+
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey("chess_games.id", ondelete="CASCADE"), nullable=False, unique=True)
+    viewed_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    game = db.relationship("ChessGame", backref="recent_view", lazy=True)
+
+    def to_dict(self) -> dict:
+        """
+        序列化为 API 响应字典。
+
+        @returns {dict} 浏览记录条目
+        """
+        return {
+            "id": self.id,
+            "game_id": self.game_id,
+            "viewed_at": self.viewed_at.isoformat() if self.viewed_at else None,
+            "game": self.game.to_dict() if self.game else None,
+        }
+
+
 class ChessGame(db.Model):
     """冷门棋类规则条目。"""
 

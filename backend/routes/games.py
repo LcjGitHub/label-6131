@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from flask import Blueprint, jsonify, request
 from sqlalchemy import case
 
-from models import Category, ChessGame, Favorite, db
+from models import Category, ChessGame, Favorite, RecentView, db
 
 games_bp = Blueprint("games", __name__, url_prefix="/api/games")
 
@@ -122,10 +124,31 @@ def list_games():
 
 @games_bp.get("/<int:game_id>")
 def get_game(game_id: int):
-    """获取单条棋类详情。"""
+    """获取单条棋类详情，并自动写入或更新浏览记录。"""
     game = db.session.get(ChessGame, game_id)
     if not game:
         return jsonify({"error": "棋类不存在"}), 404
+
+    existing = RecentView.query.filter_by(game_id=game_id).first()
+    if existing:
+        existing.viewed_at = datetime.now(timezone.utc)
+    else:
+        recent_view = RecentView(game_id=game_id)
+        db.session.add(recent_view)
+    db.session.commit()
+
+    total = RecentView.query.count()
+    if total > 50:
+        old_records = (
+            RecentView.query
+            .order_by(RecentView.viewed_at.asc())
+            .limit(total - 50)
+            .all()
+        )
+        for r in old_records:
+            db.session.delete(r)
+        db.session.commit()
+
     return jsonify(game.to_dict())
 
 
@@ -302,6 +325,7 @@ def delete_game(game_id: int):
         return jsonify({"error": "棋类不存在"}), 404
 
     Favorite.query.filter_by(game_id=game_id).delete()
+    RecentView.query.filter_by(game_id=game_id).delete()
     db.session.delete(game)
     db.session.commit()
     return jsonify({"message": "删除成功"})
@@ -337,6 +361,7 @@ def delete_games_batch():
 
         try:
             Favorite.query.filter_by(game_id=game_id).delete()
+            RecentView.query.filter_by(game_id=game_id).delete()
             db.session.delete(game)
             db.session.commit()
             success_count += 1
