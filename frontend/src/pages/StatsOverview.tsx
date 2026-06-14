@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, Card, Empty, List, Space, Tag, Typography, message } from 'antd';
-import { BarChartOutlined, ReloadOutlined, TrophyOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, BarChartOutlined, ReloadOutlined, TrophyOutlined } from '@ant-design/icons';
 
 import { fetchStatsOverview } from '../api/client';
 import type { StatsOverview } from '../types/game';
@@ -118,6 +118,50 @@ export default function StatsOverviewPage() {
           </Space>
         ) : (
           <Empty description="暂无难度分布数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        )}
+      </Card>
+
+      <Card
+        title={
+          <Space>
+            <AppstoreOutlined />
+            <span>分类分布</span>
+          </Space>
+        }
+        loading={loading}
+        bordered={false}
+        extra={
+          <Button
+            type="text"
+            size="small"
+            icon={<ReloadOutlined />}
+            onClick={loadStats}
+            disabled={loading}
+          >
+            刷新
+          </Button>
+        }
+      >
+        {stats?.category_distribution && stats.category_distribution.length > 0 ? (
+          <List
+            dataSource={stats.category_distribution}
+            renderItem={(item) => (
+              <List.Item>
+                <Space style={{ width: '100%' }}>
+                  <Tag
+                    color={item.category === '未分类' ? 'default' : 'blue'}
+                    style={{ fontSize: 14, padding: '4px 12px', borderRadius: 6 }}
+                  >
+                    {item.category}
+                  </Tag>
+                  <Text style={{ flex: 1 }} />
+                  <Text type="secondary">{item.count} 种</Text>
+                </Space>
+              </List.Item>
+            )}
+          />
+        ) : (
+          <Empty description="暂无分类分布数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
         )}
       </Card>
 

@@ -8,7 +8,7 @@ from collections import Counter
 from flask import Blueprint, jsonify
 from sqlalchemy import func
 
-from models import ChessGame, db
+from models import Category, ChessGame, db
 
 stats_bp = Blueprint("stats", __name__, url_prefix="/api/stats")
 
@@ -41,6 +41,7 @@ def get_overview():
         - total_games: 棋类总数量
         - difficulty_distribution: 各难度等级的条目数量
         - origin_rank: 按起源地区汇总的前五名排行（提取主要地区名后汇总）
+        - category_distribution: 按分类汇总各类别下条目数量（含未分类）
     """
     total_games = ChessGame.query.count()
 
@@ -63,8 +64,31 @@ def get_overview():
         for name, count in origin_counter.most_common(5)
     ]
 
+    category_rows = (
+        db.session.query(
+            Category.name,
+            func.count(ChessGame.id).label("count"),
+        )
+        .join(ChessGame, ChessGame.category_id == Category.id)
+        .group_by(Category.name)
+        .all()
+    )
+
+    uncategorized_count = ChessGame.query.filter(
+        ChessGame.category_id.is_(None)
+    ).count()
+
+    category_distribution = [
+        {"category": row.name, "count": row.count} for row in category_rows
+    ]
+    if uncategorized_count > 0:
+        category_distribution.append(
+            {"category": "未分类", "count": uncategorized_count}
+        )
+
     return jsonify({
         "total_games": total_games,
         "difficulty_distribution": difficulty_distribution,
         "origin_rank": origin_rank,
+        "category_distribution": category_distribution,
     })

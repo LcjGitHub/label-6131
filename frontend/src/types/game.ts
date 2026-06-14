@@ -68,10 +68,16 @@ export interface PaginatedResponse<T> {
 }
 
 /** 数据统计概览 */
+export interface CategoryDistributionItem {
+  category: string;
+  count: number;
+}
+
 export interface StatsOverview {
   total_games: number;
   difficulty_distribution: Record<string, number>;
   origin_rank: OriginRankItem[];
+  category_distribution: CategoryDistributionItem[];
 }
 
 /** 相邻棋类简要信息 */

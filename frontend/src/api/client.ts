@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, PaginatedResponse, SimilarGamesResponse, StatsOverview } from '../types/game';
+import type { Category, CategoryDistributionItem, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, PaginatedResponse, SimilarGamesResponse, StatsOverview } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
