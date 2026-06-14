@@ -177,3 +177,28 @@ export interface LinkCheckResponse {
     unreachable: number;
   };
 }
+
+/** 单棋类链接健康检测结果 */
+export interface LinkHealthGameItem {
+  game_id: number;
+  game_name: string;
+  unreachable_links: LinkCheckResult[];
+  summary: {
+    total: number;
+    reachable: number;
+    unreachable: number;
+  };
+}
+
+/** 链接健康汇总响应 */
+export interface LinkHealthSummaryResponse {
+  games: LinkHealthGameItem[];
+  summary: {
+    total_games_scanned: number;
+    total_games_with_links: number;
+    total_games_with_issues: number;
+    total_links: number;
+    total_reachable: number;
+    total_unreachable: number;
+  };
+}

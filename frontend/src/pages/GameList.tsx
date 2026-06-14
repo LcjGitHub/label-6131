@@ -15,7 +15,7 @@ import {
   Typography,
   message,
 } from 'antd';
-import { CheckCircleFilled, CheckCircleOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, EyeFilled, EyeOutlined, PlusOutlined, ScheduleFilled, ScheduleOutlined, StarFilled, StarOutlined, UploadOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, DeleteOutlined, DownloadOutlined, EditOutlined, EyeFilled, EyeOutlined, PlusOutlined, ScheduleFilled, ScheduleOutlined, StarFilled, StarOutlined, UploadOutlined } from '@ant-design/icons';
 
 import {
   addFavorite,

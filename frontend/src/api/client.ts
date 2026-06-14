@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, ImportResult, LinkCheckResponse, Note, PaginatedResponse, ReadHistory, RecentView, SimilarGamesResponse, StatsOverview, Tag, TagPayload, Todo } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, ImportResult, LinkCheckResponse, LinkHealthSummaryResponse, Note, PaginatedResponse, ReadHistory, RecentView, SimilarGamesResponse, StatsOverview, Tag, TagPayload, Todo } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -352,6 +352,17 @@ export async function setGameTags(gameId: number, tagIds: number[]): Promise<{ i
 export async function checkLinks(gameId: number): Promise<LinkCheckResponse> {
   const { data } = await client.get<LinkCheckResponse>(`/games/${gameId}/check-links`, {
     timeout: 30000,
+  });
+  return data;
+}
+
+/**
+ * 获取全部棋类链接健康汇总
+ * @returns 链接健康汇总数据
+ */
+export async function fetchLinkHealthSummary(): Promise<LinkHealthSummaryResponse> {
+  const { data } = await client.get<LinkHealthSummaryResponse>('/games/check-links-summary', {
+    timeout: 120000,
   });
   return data;
 }

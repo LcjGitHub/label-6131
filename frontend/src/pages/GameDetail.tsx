@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button, Descriptions, Input, Spin, Tag, Tooltip, Typography, message } from 'antd';
-import { ArrowLeftOutlined, CheckCircleOutlined, CheckOutlined, CloseCircleOutlined, ExclamationCircleOutlined, EyeFilled, EyeOutlined, LeftOutlined, LinkOutlined, RightOutlined, ScheduleFilled, ScheduleOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, EyeFilled, EyeOutlined, LeftOutlined, LinkOutlined, RightOutlined, ScheduleFilled, ScheduleOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 
 import { fetchGame, fetchGameNeighbors, fetchSimilarGames, addRecentView, fetchNote, saveNote, clearNote, checkLinks, addTodo, removeTodo, fetchTodoIds, fetchReadIds, markAsRead, unmarkRead } from '../api/client';

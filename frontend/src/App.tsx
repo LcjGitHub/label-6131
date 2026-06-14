@@ -1,12 +1,13 @@
 import { Layout, Menu, Typography } from 'antd';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { AppstoreOutlined, BarChartOutlined, HistoryOutlined, ScheduleOutlined, StarOutlined, UnorderedListOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, BarChartOutlined, HistoryOutlined, SafetyOutlined, ScheduleOutlined, StarOutlined, UnorderedListOutlined, ThunderboltOutlined } from '@ant-design/icons';
 
 import CategoryList from './pages/CategoryList';
 import FavoriteList from './pages/FavoriteList';
 import GameCompare from './pages/GameCompare';
 import GameDetail from './pages/GameDetail';
 import GameList from './pages/GameList';
+import LinkHealth from './pages/LinkHealth';
 import RandomDiscover from './pages/RandomDiscover';
 import RecentViewList from './pages/RecentViewList';
 import StatsOverview from './pages/StatsOverview';
@@ -22,6 +23,7 @@ const menuItems = [
   { key: '/favorites', label: '我的收藏', icon: <StarOutlined /> },
   { key: '/todos', label: '待学清单', icon: <ScheduleOutlined /> },
   { key: '/categories', label: '分类管理', icon: <AppstoreOutlined /> },
+  { key: '/link-health', label: '链接健康', icon: <SafetyOutlined /> },
 ];
 
 /** 应用根组件 */
@@ -31,6 +33,7 @@ export default function App() {
 
   const getSelectedKey = () => {
     if (location.pathname.startsWith('/stats')) return '';
+    if (location.pathname.startsWith('/link-health')) return '/link-health';
     if (location.pathname.startsWith('/categories')) return '/categories';
     if (location.pathname.startsWith('/todos')) return '/todos';
     if (location.pathname.startsWith('/favorites')) return '/favorites';
@@ -73,6 +76,7 @@ export default function App() {
           <Route path="/favorites" element={<FavoriteList />} />
           <Route path="/todos" element={<TodoList />} />
           <Route path="/categories" element={<CategoryList />} />
+          <Route path="/link-health" element={<LinkHealth />} />
           <Route path="/games/:id" element={<GameDetail />} />
           <Route path="/compare" element={<GameCompare />} />
           <Route path="/stats" element={<StatsOverview />} />

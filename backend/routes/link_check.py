@@ -69,3 +69,61 @@ def check_links(game_id: int):
             "unreachable": unreachable_count,
         },
     })
+
+
+@link_check_bp.get("/check-links-summary")
+def check_links_summary():
+    """扫描全部棋类相关链接并逐条检测可达性，返回各棋类失效链接列表及统计摘要。"""
+    games = ChessGame.query.all()
+
+    game_results = []
+    total_links = 0
+    total_reachable = 0
+    total_unreachable = 0
+    games_with_issues = 0
+
+    for game in games:
+        raw_links = game.links or ""
+        urls = _extract_urls(raw_links)
+
+        if not urls:
+            continue
+
+        results = [_check_single_url(u) for u in urls]
+        unreachable_results = [r for r in results if not r["reachable"]]
+
+        reachable_count = sum(1 for r in results if r["reachable"])
+        unreachable_count = len(results) - reachable_count
+
+        total_links += len(results)
+        total_reachable += reachable_count
+        total_unreachable += unreachable_count
+
+        if unreachable_count > 0:
+            games_with_issues += 1
+
+        game_results.append({
+            "game_id": game.id,
+            "game_name": game.name,
+            "unreachable_links": unreachable_results,
+            "summary": {
+                "total": len(results),
+                "reachable": reachable_count,
+                "unreachable": unreachable_count,
+            },
+        })
+
+    game_results_with_issues = [g for g in game_results if g["unreachable_links"]]
+    game_results_with_issues.sort(key=lambda x: x["summary"]["unreachable"], reverse=True)
+
+    return jsonify({
+        "games": game_results_with_issues,
+        "summary": {
+            "total_games_scanned": len(games),
+            "total_games_with_links": len(game_results),
+            "total_games_with_issues": games_with_issues,
+            "total_links": total_links,
+            "total_reachable": total_reachable,
+            "total_unreachable": total_unreachable,
+        },
+    })
