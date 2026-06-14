@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from io import BytesIO
 
 from flask import Blueprint, jsonify, request, send_file
-from sqlalchemy import case
+from sqlalchemy import case, func
 
 from models import Category, ChessGame, Favorite, GameTag, RecentView, db
 
@@ -122,6 +122,15 @@ def list_games():
         "page": page,
         "page_size": page_size,
     })
+
+
+@games_bp.get("/random")
+def get_random_game():
+    """随机获取一条棋类完整信息。"""
+    game = ChessGame.query.order_by(func.random()).first()
+    if not game:
+        return jsonify({"error": "暂无棋类数据"}), 404
+    return jsonify(game.to_dict())
 
 
 @games_bp.get("/<int:game_id>")

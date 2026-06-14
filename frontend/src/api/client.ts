@@ -78,6 +78,15 @@ export async function fetchGames(
 }
 
 /**
+ * 随机获取一条棋类完整信息
+ * @returns 随机棋类详情
+ */
+export async function fetchRandomGame(): Promise<ChessGame> {
+  const { data } = await client.get<ChessGame>('/games/random');
+  return data;
+}
+
+/**
  * 获取单条棋类详情
  * @param id - 棋类 ID
  * @returns 棋类详情
