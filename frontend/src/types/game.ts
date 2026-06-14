@@ -74,6 +74,14 @@ export interface Todo {
   game: ChessGame | null;
 }
 
+/** 已读记录条目类型 */
+export interface ReadHistory {
+  id: number;
+  game_id: number;
+  read_at?: string;
+  game: ChessGame | null;
+}
+
 /** 批量获取中存在错误的条目 */
 export interface ChessGameError {
   id: number;

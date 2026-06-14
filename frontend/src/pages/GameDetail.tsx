@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button, Descriptions, Input, Spin, Tag, Tooltip, Typography, message } from 'antd';
-import { ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, LeftOutlined, LinkOutlined, RightOutlined, ScheduleFilled, ScheduleOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CheckCircleOutlined, CheckOutlined, CloseCircleOutlined, ExclamationCircleOutlined, EyeFilled, EyeOutlined, LeftOutlined, LinkOutlined, RightOutlined, ScheduleFilled, ScheduleOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 
-import { fetchGame, fetchGameNeighbors, fetchSimilarGames, addRecentView, fetchNote, saveNote, clearNote, checkLinks, addTodo, removeTodo, fetchTodoIds } from '../api/client';
+import { fetchGame, fetchGameNeighbors, fetchSimilarGames, addRecentView, fetchNote, saveNote, clearNote, checkLinks, addTodo, removeTodo, fetchTodoIds, fetchReadIds, markAsRead, unmarkRead } from '../api/client';
 import type { ChessGame, GameNeighbors, LinkCheckResult, SimilarGamesResponse } from '../types/game';
 
 const { Title, Paragraph, Text } = Typography;
@@ -34,6 +34,7 @@ export default function GameDetail() {
   const [linkChecking, setLinkChecking] = useState(false);
   const [linkCheckError, setLinkCheckError] = useState(false);
   const [isTodo, setIsTodo] = useState(false);
+  const [isRead, setIsRead] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -46,6 +47,7 @@ export default function GameDetail() {
       setLinkChecking(false);
       setLinkCheckError(false);
       setIsTodo(false);
+      setIsRead(false);
       try {
         const gameId = Number(id);
         const gameData = await fetchGame(gameId);
@@ -56,6 +58,12 @@ export default function GameDetail() {
           setIsTodo(todoIds.includes(gameId));
         } catch {
           setIsTodo(false);
+        }
+        try {
+          const readIds = await fetchReadIds();
+          setIsRead(readIds.includes(gameId));
+        } catch {
+          setIsRead(false);
         }
         try {
           const noteData = await fetchNote(gameId);
@@ -109,6 +117,29 @@ export default function GameDetail() {
         await addTodo(gameId);
         setIsTodo(true);
         message.success('已加入待学');
+      }
+    } catch (err) {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { error?: string } } };
+        message.error(axiosErr.response?.data?.error ?? '操作失败');
+      } else {
+        message.error('操作失败');
+      }
+    }
+  };
+
+  const toggleRead = async () => {
+    if (!id) return;
+    const gameId = Number(id);
+    try {
+      if (isRead) {
+        await unmarkRead(gameId);
+        setIsRead(false);
+        message.success('已取消已读');
+      } else {
+        await markAsRead(gameId);
+        setIsRead(true);
+        message.success('已标记为已读');
       }
     } catch (err) {
       if (typeof err === 'object' && err !== null && 'response' in err) {
@@ -280,8 +311,16 @@ export default function GameDetail() {
         <Link to="/">返回列表</Link>
       </Button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
         <Title level={2} style={{ margin: 0 }}>{game.name}</Title>
+        <Button
+          icon={isRead ? <EyeFilled /> : <EyeOutlined />}
+          onClick={toggleRead}
+          type={isRead ? 'primary' : 'default'}
+          style={isRead ? { backgroundColor: '#52c41a', borderColor: '#52c41a' } : undefined}
+        >
+          {isRead ? '已读' : '标记已读'}
+        </Button>
         <Button
           icon={isTodo ? <ScheduleFilled /> : <ScheduleOutlined />}
           onClick={toggleTodo}

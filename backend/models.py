@@ -123,6 +123,36 @@ class Todo(db.Model):
         }
 
 
+class ReadHistory(db.Model):
+    """已读记录。"""
+
+    __tablename__ = "read_history"
+
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey("chess_games.id", ondelete="CASCADE"), nullable=False, unique=True)
+    read_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    game = db.relationship("ChessGame", backref="read_history", lazy=True)
+
+    def to_dict(self) -> dict:
+        """
+        序列化为 API 响应字典。
+
+        @returns {dict} 已读记录条目
+        """
+        return {
+            "id": self.id,
+            "game_id": self.game_id,
+            "read_at": self.read_at.isoformat() if self.read_at else None,
+            "game": self.game.to_dict() if self.game else None,
+        }
+
+
 class ChessGame(db.Model):
     """冷门棋类规则条目。"""
 

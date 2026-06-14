@@ -15,7 +15,7 @@ import {
   Typography,
   message,
 } from 'antd';
-import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined, ScheduleFilled, ScheduleOutlined, StarFilled, StarOutlined, UploadOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, CheckCircleOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, EyeFilled, EyeOutlined, PlusOutlined, ScheduleFilled, ScheduleOutlined, StarFilled, StarOutlined, UploadOutlined } from '@ant-design/icons';
 
 import {
   addFavorite,
@@ -26,12 +26,15 @@ import {
   deleteGame,
   exportGames,
   fetchFavoriteIds,
+  fetchReadIds,
   fetchTags,
   fetchTodoIds,
   importGames,
+  markAsRead,
   removeFavorite,
   removeTodo,
   setGameTags,
+  unmarkRead,
   updateGame,
 } from '../api/client';
 import type { ChessGame, ChessGamePayload, Tag as ChessTag } from '../types/game';
@@ -72,6 +75,7 @@ export default function GameList() {
   const [submitting, setSubmitting] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
   const [todoIds, setTodoIds] = useState<Set<number>>(new Set());
+  const [readIds, setReadIds] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [batchDeleteModalOpen, setBatchDeleteModalOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
@@ -99,6 +103,15 @@ export default function GameList() {
       setTodoIds(new Set(ids));
     } catch {
       message.error('加载待学状态失败');
+    }
+  };
+
+  const loadReadIds = async () => {
+    try {
+      const ids = await fetchReadIds();
+      setReadIds(new Set(ids));
+    } catch {
+      message.error('加载已读状态失败');
     }
   };
 
@@ -141,10 +154,11 @@ export default function GameList() {
     }
   };
 
-  // 组件挂载时加载收藏状态（分类和列表数据已在 useGameList 中加载）
+  // 组件挂载时加载收藏、待学、已读状态（分类和列表数据已在 useGameList 中加载）
   useEffect(() => {
     loadFavoriteIds();
     loadTodoIds();
+    loadReadIds();
   }, []);
 
   const toggleFavorite = async (gameId: number) => {
@@ -191,6 +205,32 @@ export default function GameList() {
           return next;
         });
         message.success('已加入待学');
+      }
+    } catch (err) {
+      if (axiosIsError(err)) {
+        message.error(err.response?.data?.error ?? '操作失败');
+      }
+    }
+  };
+
+  const toggleRead = async (gameId: number) => {
+    try {
+      if (readIds.has(gameId)) {
+        await unmarkRead(gameId);
+        setReadIds((prev) => {
+          const next = new Set(prev);
+          next.delete(gameId);
+          return next;
+        });
+        message.success('已取消已读');
+      } else {
+        await markAsRead(gameId);
+        setReadIds((prev) => {
+          const next = new Set(prev);
+          next.add(gameId);
+          return next;
+        });
+        message.success('已标记为已读');
       }
     } catch (err) {
       if (axiosIsError(err)) {
@@ -466,7 +506,20 @@ export default function GameList() {
         renderItem={(item) => (
           <List.Item
             key={item.id}
+            style={{
+              backgroundColor: readIds.has(item.id) ? '#f6ffed' : undefined,
+              position: 'relative',
+            }}
             actions={[
+              <Button
+                key="read"
+                type="link"
+                icon={readIds.has(item.id) ? <EyeFilled /> : <EyeOutlined />}
+                onClick={() => toggleRead(item.id)}
+                style={readIds.has(item.id) ? { color: '#52c41a' } : undefined}
+              >
+                {readIds.has(item.id) ? '已读' : '标记已读'}
+              </Button>,
               <Button
                 key="favorite"
                 type="link"
@@ -499,6 +552,30 @@ export default function GameList() {
               </Popconfirm>,
             ]}
           >
+            {readIds.has(item.id) && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: 0,
+                  height: 0,
+                  borderTop: '32px solid #52c41a',
+                  borderLeft: '32px solid transparent',
+                  zIndex: 1,
+                }}
+              >
+                <CheckCircleFilled
+                  style={{
+                    position: 'absolute',
+                    top: '-28px',
+                    right: '2px',
+                    color: '#fff',
+                    fontSize: 14,
+                  }}
+                />
+              </div>
+            )}
             <Space align="start" style={{ width: '100%' }}>
               <Checkbox
                 checked={selectedIds.has(item.id)}

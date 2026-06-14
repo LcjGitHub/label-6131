@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, ImportResult, LinkCheckResponse, Note, PaginatedResponse, RecentView, SimilarGamesResponse, StatsOverview, Tag, TagPayload, Todo } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, ImportResult, LinkCheckResponse, Note, PaginatedResponse, ReadHistory, RecentView, SimilarGamesResponse, StatsOverview, Tag, TagPayload, Todo } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -392,4 +392,43 @@ export async function addTodo(gameId: number): Promise<Todo> {
  */
 export async function removeTodo(gameId: number): Promise<void> {
   await client.delete(`/todos/${gameId}`);
+}
+
+/**
+ * 获取全部已读记录列表（含棋类详情）
+ * @param sortOrder - 排序方向，默认倒序
+ * @returns 已读记录数组
+ */
+export async function fetchReadHistory(sortOrder: 'asc' | 'desc' = 'desc'): Promise<ReadHistory[]> {
+  const { data } = await client.get<ReadHistory[]>('/read-history', {
+    params: { sort_order: sortOrder },
+  });
+  return data;
+}
+
+/**
+ * 获取全部已读的棋类 ID 列表
+ * @returns 已读的棋类 ID 数组
+ */
+export async function fetchReadIds(): Promise<number[]> {
+  const { data } = await client.get<number[]>('/read-history/ids');
+  return data;
+}
+
+/**
+ * 标记已读
+ * @param gameId - 棋类 ID
+ * @returns 已读记录条目
+ */
+export async function markAsRead(gameId: number): Promise<ReadHistory> {
+  const { data } = await client.post<ReadHistory>('/read-history', { game_id: gameId });
+  return data;
+}
+
+/**
+ * 取消已读
+ * @param gameId - 棋类 ID
+ */
+export async function unmarkRead(gameId: number): Promise<void> {
+  await client.delete(`/read-history/${gameId}`);
 }
