@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button, Descriptions, Input, Spin, Tag, Tooltip, Typography, message } from 'antd';
-import { ArrowLeftOutlined, LeftOutlined, LinkOutlined, RightOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, LeftOutlined, LinkOutlined, RightOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 
-import { fetchGame, fetchGameNeighbors, fetchSimilarGames, addRecentView, fetchNote, saveNote, clearNote } from '../api/client';
-import type { ChessGame, GameNeighbors, SimilarGamesResponse } from '../types/game';
+import { fetchGame, fetchGameNeighbors, fetchSimilarGames, addRecentView, fetchNote, saveNote, clearNote, checkLinks } from '../api/client';
+import type { ChessGame, GameNeighbors, LinkCheckResult, SimilarGamesResponse } from '../types/game';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -16,7 +16,6 @@ const difficultyColor: Record<string, string> = {
   困难: 'red',
 };
 
-/** 规则详情页 */
 const { TextArea } = Input;
 
 export default function GameDetail() {
@@ -31,6 +30,9 @@ export default function GameDetail() {
   const [noteContent, setNoteContent] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteClearing, setNoteClearing] = useState(false);
+  const [linkResults, setLinkResults] = useState<LinkCheckResult[]>([]);
+  const [linkChecking, setLinkChecking] = useState(false);
+  const [linkCheckError, setLinkCheckError] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -39,6 +41,9 @@ export default function GameDetail() {
       setNeighborsError(false);
       setSimilarError(false);
       setNoteContent('');
+      setLinkResults([]);
+      setLinkChecking(false);
+      setLinkCheckError(false);
       try {
         const gameId = Number(id);
         const gameData = await fetchGame(gameId);
@@ -63,6 +68,17 @@ export default function GameDetail() {
         } catch {
           setSimilarError(true);
           setSimilarGames(null);
+        }
+        if (gameData.links && gameData.links.trim()) {
+          setLinkChecking(true);
+          try {
+            const checkData = await checkLinks(gameId);
+            setLinkResults(checkData.results);
+          } catch {
+            setLinkCheckError(true);
+          } finally {
+            setLinkChecking(false);
+          }
         }
       } catch {
         message.error('加载详情失败');
@@ -100,6 +116,96 @@ export default function GameDetail() {
     } finally {
       setNoteClearing(false);
     }
+  };
+
+  const getLinkStatus = (url: string): LinkCheckResult | undefined => {
+    return linkResults.find((r) => r.url === url);
+  };
+
+  const renderLinkStatusIcon = (url: string) => {
+    if (linkChecking) {
+      return <Spin size="small" style={{ marginLeft: 6 }} />;
+    }
+    const result = getLinkStatus(url);
+    if (!result) return null;
+    if (result.reachable) {
+      return (
+        <Tooltip title={`可达 (HTTP ${result.status_code})`}>
+          <CheckCircleOutlined style={{ color: '#52c41a', marginLeft: 6 }} />
+        </Tooltip>
+      );
+    }
+    return (
+      <Tooltip title={`不可达${result.reason ? `：${result.reason}` : ''}`}>
+        <CloseCircleOutlined style={{ color: '#ff4d4f', marginLeft: 6 }} />
+      </Tooltip>
+    );
+  };
+
+  const renderLinksSection = () => {
+    if (!game?.links || !game.links.trim()) {
+      return <Text type="secondary">暂无</Text>;
+    }
+
+    const urls = game.links.match(/https?:\/\/[^\s,，]+/g) || [game.links.trim()];
+
+    if (linkChecking) {
+      return (
+        <div>
+          {urls.map((url) => (
+            <div key={url} style={{ marginBottom: 4, display: 'flex', alignItems: 'center' }}>
+              <a href={url} target="_blank" rel="noreferrer">
+                <LinkOutlined /> {url}
+              </a>
+              <Spin size="small" style={{ marginLeft: 6 }} />
+            </div>
+          ))}
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            正在检测链接可达性...
+          </Text>
+        </div>
+      );
+    }
+
+    if (linkCheckError) {
+      return (
+        <div>
+          {urls.map((url) => (
+            <div key={url} style={{ marginBottom: 4 }}>
+              <a href={url} target="_blank" rel="noreferrer">
+                <LinkOutlined /> {url}
+              </a>
+              <Tooltip title="检测出错，无法判断链接状态">
+                <ExclamationCircleOutlined style={{ color: '#faad14', marginLeft: 6 }} />
+              </Tooltip>
+            </div>
+          ))}
+          <Text type="warning" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+            链接检测出错，无法判断可达性，但不影响正常访问
+          </Text>
+        </div>
+      );
+    }
+
+    const allUnreachable = linkResults.length > 0 && linkResults.every((r) => !r.reachable);
+
+    return (
+      <div>
+        {urls.map((url) => (
+          <div key={url} style={{ marginBottom: 4 }}>
+            <a href={url} target="_blank" rel="noreferrer">
+              <LinkOutlined /> {url}
+            </a>
+            {renderLinkStatusIcon(url)}
+          </div>
+        ))}
+        {allUnreachable && (
+          <Text type="danger" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+            所有链接均不可达，可能是目标网站暂时不可用或链接已失效
+          </Text>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -200,13 +306,7 @@ export default function GameDetail() {
           <Tag color={difficultyColor[game.difficulty] ?? 'default'}>{game.difficulty}</Tag>
         </Descriptions.Item>
         <Descriptions.Item label="相关链接">
-          {game.links ? (
-            <a href={game.links} target="_blank" rel="noreferrer">
-              <LinkOutlined /> {game.links}
-            </a>
-          ) : (
-            <Text type="secondary">暂无</Text>
-          )}
+          {renderLinksSection()}
         </Descriptions.Item>
       </Descriptions>
 

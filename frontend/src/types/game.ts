@@ -142,3 +142,22 @@ export interface ImportResult {
   failed_count: number;
   failed: Array<{ index: number; name?: string; error: string }>;
 }
+
+/** 单条链接检测结果 */
+export interface LinkCheckResult {
+  url: string;
+  reachable: boolean;
+  status_code?: number;
+  reason?: string;
+}
+
+/** 链接可达性检测响应 */
+export interface LinkCheckResponse {
+  game_id: number;
+  results: LinkCheckResult[];
+  summary: {
+    total: number;
+    reachable: number;
+    unreachable: number;
+  };
+}
