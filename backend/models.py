@@ -138,3 +138,40 @@ class ChessGame(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class Note(db.Model):
+    """个人备注。"""
+
+    __tablename__ = "notes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey("chess_games.id", ondelete="CASCADE"), nullable=False, unique=True)
+    content = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    game = db.relationship("ChessGame", backref="note", lazy=True)
+
+    def to_dict(self) -> dict:
+        """
+        序列化为 API 响应字典。
+
+        @returns {dict} 备注条目
+        """
+        return {
+            "id": self.id,
+            "game_id": self.game_id,
+            "content": self.content,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Button, Descriptions, Spin, Tag, Tooltip, Typography, message } from 'antd';
+import { Button, Descriptions, Input, Spin, Tag, Tooltip, Typography, message } from 'antd';
 import { ArrowLeftOutlined, LeftOutlined, LinkOutlined, RightOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 
-import { fetchGame, fetchGameNeighbors, fetchSimilarGames, addRecentView } from '../api/client';
+import { fetchGame, fetchGameNeighbors, fetchSimilarGames, addRecentView, fetchNote, saveNote, clearNote } from '../api/client';
 import type { ChessGame, GameNeighbors, SimilarGamesResponse } from '../types/game';
 
 const { Title, Paragraph, Text } = Typography;
@@ -17,6 +17,8 @@ const difficultyColor: Record<string, string> = {
 };
 
 /** 规则详情页 */
+const { TextArea } = Input;
+
 export default function GameDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -26,6 +28,9 @@ export default function GameDetail() {
   const [similarGames, setSimilarGames] = useState<SimilarGamesResponse | null>(null);
   const [similarError, setSimilarError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [noteContent, setNoteContent] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteClearing, setNoteClearing] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -33,11 +38,18 @@ export default function GameDetail() {
       setLoading(true);
       setNeighborsError(false);
       setSimilarError(false);
+      setNoteContent('');
       try {
         const gameId = Number(id);
         const gameData = await fetchGame(gameId);
         setGame(gameData);
         addRecentView(gameId).catch(() => {});
+        try {
+          const noteData = await fetchNote(gameId);
+          setNoteContent(noteData.content || '');
+        } catch {
+          setNoteContent('');
+        }
         try {
           const neighborsData = await fetchGameNeighbors(gameId);
           setNeighbors(neighborsData);
@@ -60,6 +72,35 @@ export default function GameDetail() {
     };
     load();
   }, [id]);
+
+  const handleSaveNote = async () => {
+    if (!id) return;
+    const gameId = Number(id);
+    setNoteSaving(true);
+    try {
+      await saveNote(gameId, noteContent);
+      message.success('备注已保存');
+    } catch {
+      message.error('保存失败，请稍后重试');
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
+  const handleClearNote = async () => {
+    if (!id) return;
+    const gameId = Number(id);
+    setNoteClearing(true);
+    try {
+      await clearNote(gameId);
+      setNoteContent('');
+      message.success('备注已清空');
+    } catch {
+      message.error('清空失败，请稍后重试');
+    } finally {
+      setNoteClearing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -159,6 +200,40 @@ export default function GameDetail() {
       <Title level={4}>规则摘要</Title>
       <Paragraph>
         <ReactMarkdown>{game.summary}</ReactMarkdown>
+      </Paragraph>
+
+      <Title level={4}>我的备注</Title>
+      <Paragraph>
+        <TextArea
+          value={noteContent}
+          onChange={(e) => setNoteContent(e.target.value)}
+          placeholder="在这里添加你的个人笔记..."
+          autoSize={{ minRows: 4, maxRows: 12 }}
+          style={{ marginBottom: 12 }}
+        />
+        {!noteContent && (
+          <Text type="secondary" style={{ display: 'block', marginBottom: 12, fontStyle: 'italic' }}>
+            暂无备注，点击上方输入框添加你的个人笔记
+          </Text>
+        )}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <Button
+            type="primary"
+            onClick={handleSaveNote}
+            loading={noteSaving}
+            disabled={!noteContent.trim()}
+          >
+            保存
+          </Button>
+          <Button
+            danger
+            onClick={handleClearNote}
+            loading={noteClearing}
+            disabled={!noteContent}
+          >
+            清空
+          </Button>
+        </div>
       </Paragraph>
 
       <Title level={4}>同类推荐</Title>

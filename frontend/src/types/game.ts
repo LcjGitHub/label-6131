@@ -109,3 +109,12 @@ export interface SimilarGame {
 export interface SimilarGamesResponse {
   items: SimilarGame[];
 }
+
+/** 个人备注类型 */
+export interface Note {
+  id?: number;
+  game_id: number;
+  content: string;
+  created_at?: string;
+  updated_at?: string;
+}

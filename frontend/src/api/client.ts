@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, PaginatedResponse, RecentView, SimilarGamesResponse, StatsOverview } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, Note, PaginatedResponse, RecentView, SimilarGamesResponse, StatsOverview } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -216,5 +216,35 @@ export async function fetchRecentViews(): Promise<RecentView[]> {
 
 export async function addRecentView(gameId: number): Promise<RecentView> {
   const { data } = await client.post<RecentView>('/recent-views', { game_id: gameId });
+  return data;
+}
+
+/**
+ * 按棋类编号查询备注
+ * @param gameId - 棋类 ID
+ * @returns 备注内容
+ */
+export async function fetchNote(gameId: number): Promise<Note> {
+  const { data } = await client.get<Note>(`/notes/${gameId}`);
+  return data;
+}
+
+/**
+ * 保存备注
+ * @param gameId - 棋类 ID
+ * @param content - 备注内容
+ * @returns 保存后的备注
+ */
+export async function saveNote(gameId: number, content: string): Promise<Note> {
+  const { data } = await client.post<Note>('/notes', { game_id: gameId, content });
+  return data;
+}
+
+/**
+ * 清空备注
+ * @param gameId - 棋类 ID
+ */
+export async function clearNote(gameId: number): Promise<{ message: string }> {
+  const { data } = await client.delete<{ message: string }>(`/notes/${gameId}`);
   return data;
 }
