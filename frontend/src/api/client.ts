@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, Note, PaginatedResponse, RecentView, SimilarGamesResponse, StatsOverview } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, ImportResult, Note, PaginatedResponse, RecentView, SimilarGamesResponse, StatsOverview } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -246,5 +246,46 @@ export async function saveNote(gameId: number, content: string): Promise<Note> {
  */
 export async function clearNote(gameId: number): Promise<{ message: string }> {
   const { data } = await client.delete<{ message: string }>(`/notes/${gameId}`);
+  return data;
+}
+
+/**
+ * 导出全部棋类数据为 JSON 文件（触发浏览器下载）
+ */
+export async function exportGames(): Promise<void> {
+  const response = await client.get('/games/export', {
+    responseType: 'blob',
+  });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  const contentDisposition = response.headers['content-disposition'];
+  let filename = 'chess-games-export.json';
+  if (contentDisposition) {
+    const match = contentDisposition.match(/filename="?([^"]+)"?/);
+    if (match) {
+      filename = match[1];
+    }
+  }
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
+
+/**
+ * 导入棋类数据
+ * @param file - 上传的 JSON 文件
+ * @returns 导入结果
+ */
+export async function importGames(file: File): Promise<ImportResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await client.post<ImportResult>('/games/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return data;
 }

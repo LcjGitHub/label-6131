@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -15,14 +15,16 @@ import {
   Typography,
   message,
 } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, StarFilled, StarOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined, StarFilled, StarOutlined, UploadOutlined } from '@ant-design/icons';
 
 import {
   addFavorite,
   batchDeleteGames,
   createGame,
   deleteGame,
+  exportGames,
   fetchFavoriteIds,
+  importGames,
   removeFavorite,
   updateGame,
 } from '../api/client';
@@ -67,6 +69,8 @@ export default function GameList() {
   const [batchDeleteModalOpen, setBatchDeleteModalOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [form] = Form.useForm<ChessGamePayload>();
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const loadFavoriteIds = async () => {
@@ -232,6 +236,57 @@ export default function GameList() {
     setSelectedIds(new Set());
   };
 
+  const handleExport = async () => {
+    try {
+      await exportGames();
+      message.success('导出成功');
+    } catch (err) {
+      if (axiosIsError(err)) {
+        message.error(err.response?.data?.error ?? '导出失败');
+      } else {
+        message.error('导出失败');
+      }
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setImporting(true);
+      const result = await importGames(file);
+      if (result.success_count > 0) {
+        message.success(`导入成功：新增 ${result.success_count} 条`);
+      }
+      if (result.skip_count > 0) {
+        message.warning(`跳过重复名称 ${result.skip_count} 条`);
+      }
+      if (result.failed_count > 0) {
+        const errorMsgs = result.failed.slice(0, 3).map((f) => f.error).join('；');
+        message.error(`导入失败 ${result.failed_count} 条：${errorMsgs}`);
+      }
+      if (result.success_count > 0 || result.skip_count > 0) {
+        await reloadGames(page, pageSize);
+      }
+    } catch (err) {
+      if (axiosIsError(err)) {
+        message.error(err.response?.data?.error ?? '导入失败');
+      } else {
+        message.error('导入失败');
+      }
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
@@ -291,9 +346,24 @@ export default function GameList() {
             取消选择
           </Button>
         </Space>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          新增棋类
-        </Button>
+        <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleExport}>
+            导出全部数据
+          </Button>
+          <Button icon={<UploadOutlined />} onClick={handleImportClick} loading={importing}>
+            选择文件导入
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+          />
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            新增棋类
+          </Button>
+        </Space>
       </Space>
 
       <List

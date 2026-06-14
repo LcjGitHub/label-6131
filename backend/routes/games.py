@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
+from io import BytesIO
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 from sqlalchemy import case
 
 from models import Category, ChessGame, Favorite, RecentView, db
@@ -372,5 +374,142 @@ def delete_games_batch():
     return jsonify({
         "message": f"成功删除 {success_count} 个棋类",
         "success_count": success_count,
+        "failed": failed,
+    })
+
+
+@games_bp.get("/export")
+def export_games():
+    """导出全部棋类条目为 JSON 文件。"""
+    games = ChessGame.query.order_by(ChessGame.id.asc()).all()
+    export_data = {
+        "version": "1.0",
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "count": len(games),
+        "items": [
+            {
+                "name": game.name,
+                "origin": game.origin,
+                "summary": game.summary,
+                "difficulty": game.difficulty,
+                "links": game.links or "",
+                "board_size": game.board_size or "",
+                "category_id": game.category_id,
+            }
+            for game in games
+        ],
+    }
+
+    json_str = json.dumps(export_data, ensure_ascii=False, indent=2)
+    buffer = BytesIO(json_str.encode("utf-8"))
+    buffer.seek(0)
+
+    filename = f"chess-games-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.json"
+    return send_file(
+        buffer,
+        mimetype="application/json",
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
+REQUIRED_FIELDS = ["name", "origin", "summary", "difficulty"]
+
+
+@games_bp.post("/import")
+def import_games():
+    """从上传的 JSON 文件批量导入棋类条目。"""
+    if "file" not in request.files:
+        return jsonify({"error": "请选择要上传的数据文件"}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"error": "文件名不能为空"}), 400
+
+    try:
+        file_content = file.read().decode("utf-8")
+        data = json.loads(file_content)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return jsonify({"error": "文件格式不正确，必须是有效的 JSON 文件"}), 400
+
+    items = data.get("items", []) if isinstance(data, dict) else data
+    if not isinstance(items, list):
+        return jsonify({"error": "数据格式错误：items 必须是数组"}), 400
+
+    if len(items) == 0:
+        return jsonify({"error": "导入数据为空"}), 400
+
+    existing_names = {g.name for g in ChessGame.query.all()}
+
+    success_count = 0
+    skip_count = 0
+    failed: list[dict] = []
+    seen_names: set[str] = set()
+
+    for index, item in enumerate(items):
+        if not isinstance(item, dict):
+            failed.append({"index": index, "error": "条目格式错误，必须是对象"})
+            continue
+
+        missing = [f for f in REQUIRED_FIELDS if not (item.get(f) or "").strip()]
+        if missing:
+            failed.append({
+                "index": index,
+                "name": item.get("name", ""),
+                "error": f"缺少必填字段：{', '.join(missing)}",
+            })
+            continue
+
+        name = item["name"].strip()
+        origin = item["origin"].strip()
+        summary = item["summary"].strip()
+        difficulty = item["difficulty"].strip()
+        links = _parse_links(item.get("links"))
+        board_size = (item.get("board_size") or "").strip() or None
+
+        if name in existing_names or name in seen_names:
+            skip_count += 1
+            continue
+
+        category_id = None
+        raw_cat = item.get("category_id")
+        if raw_cat is not None and raw_cat != "":
+            cat_id_res, cat_err = _resolve_category_id(raw_cat)
+            if cat_err:
+                failed.append({
+                    "index": index,
+                    "name": name,
+                    "error": cat_err,
+                })
+                continue
+            category_id = cat_id_res
+
+        try:
+            game = ChessGame(
+                name=name,
+                origin=origin,
+                summary=summary,
+                difficulty=difficulty,
+                links=links,
+                board_size=board_size,
+                category_id=category_id,
+            )
+            db.session.add(game)
+            db.session.commit()
+            success_count += 1
+            seen_names.add(name)
+        except Exception as e:
+            db.session.rollback()
+            failed.append({
+                "index": index,
+                "name": name,
+                "error": str(e),
+            })
+
+    return jsonify({
+        "message": f"导入完成：成功 {success_count} 条，跳过 {skip_count} 条，失败 {len(failed)} 条",
+        "success_count": success_count,
+        "skip_count": skip_count,
+        "failed_count": len(failed),
         "failed": failed,
     })

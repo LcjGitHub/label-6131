@@ -435,3 +435,203 @@ class TestListGames:
         assert response.status_code == 200
         data = response.get_json()
         assert data["total"] >= 5
+
+
+class TestExportGames:
+    """导出棋类接口测试。"""
+
+    def test_export_games_success(self, client):
+        """导出全部棋类，返回 JSON 文件下载。"""
+        _create_game(client, name="导出测试棋1", origin="测试", summary="测试导出", difficulty="入门")
+        _create_game(client, name="导出测试棋2", origin="测试", summary="测试导出", difficulty="中等")
+
+        response = client.get(f"{BASE_URL}/export")
+        assert response.status_code == 200
+        assert "application/json" in response.content_type
+        assert "attachment" in response.headers.get("Content-Disposition", "")
+
+        import json
+        data = json.loads(response.data)
+        assert "version" in data
+        assert "exported_at" in data
+        assert "items" in data
+        assert data["count"] >= 2
+        assert len(data["items"]) >= 2
+
+        item = data["items"][0]
+        assert "name" in item
+        assert "origin" in item
+        assert "summary" in item
+        assert "difficulty" in item
+        assert "links" in item
+        assert "board_size" in item
+        assert "category_id" in item
+        assert "id" not in item
+
+
+class TestImportGames:
+    """导入棋类接口测试。"""
+
+    def test_import_games_success(self, client):
+        """正常导入棋类条目。"""
+        import io
+        import json
+
+        import_data = {
+            "version": "1.0",
+            "items": [
+                {"name": "导入棋类1", "origin": "导入源", "summary": "导入摘要1", "difficulty": "入门"},
+                {"name": "导入棋类2", "origin": "导入源", "summary": "导入摘要2", "difficulty": "中等", "board_size": "8×8"},
+            ],
+        }
+        data = json.dumps(import_data, ensure_ascii=False).encode("utf-8")
+        file = (io.BytesIO(data), "test-import.json")
+
+        response = client.post(
+            f"{BASE_URL}/import",
+            data={"file": file},
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 200
+        result = response.get_json()
+        assert result["success_count"] == 2
+        assert result["skip_count"] == 0
+        assert result["failed_count"] == 0
+
+        list_resp = client.get(f"{BASE_URL}?page_size=100")
+        list_data = list_resp.get_json()
+        names = [g["name"] for g in list_data["items"]]
+        assert "导入棋类1" in names
+        assert "导入棋类2" in names
+
+    def test_import_duplicate_names_skipped(self, client):
+        """重复名称的棋类应跳过并统计。"""
+        _create_game(client, name="已存在棋类", origin="原源", summary="原摘要", difficulty="入门")
+
+        import io
+        import json
+
+        import_data = {
+            "items": [
+                {"name": "已存在棋类", "origin": "新源", "summary": "新摘要", "difficulty": "中等"},
+                {"name": "新增棋类", "origin": "新源", "summary": "新摘要", "difficulty": "中等"},
+            ],
+        }
+        data = json.dumps(import_data, ensure_ascii=False).encode("utf-8")
+        file = (io.BytesIO(data), "test-import.json")
+
+        response = client.post(
+            f"{BASE_URL}/import",
+            data={"file": file},
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 200
+        result = response.get_json()
+        assert result["success_count"] == 1
+        assert result["skip_count"] == 1
+
+    def test_import_missing_required_fields(self, client):
+        """缺失必填字段的条目应失败。"""
+        import io
+        import json
+
+        import_data = {
+            "items": [
+                {"name": "", "origin": "源", "summary": "摘要", "difficulty": "入门"},
+                {"name": "有效棋", "origin": "", "summary": "摘要", "difficulty": "入门"},
+                {"name": "完整棋", "origin": "源", "summary": "摘要", "difficulty": "入门"},
+            ],
+        }
+        data = json.dumps(import_data, ensure_ascii=False).encode("utf-8")
+        file = (io.BytesIO(data), "test-import.json")
+
+        response = client.post(
+            f"{BASE_URL}/import",
+            data={"file": file},
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 200
+        result = response.get_json()
+        assert result["success_count"] == 1
+        assert result["failed_count"] == 2
+
+    def test_import_no_file_error(self, client):
+        """未上传文件应返回错误。"""
+        response = client.post(f"{BASE_URL}/import", data={}, content_type="multipart/form-data")
+        assert response.status_code == 400
+
+    def test_import_invalid_json_error(self, client):
+        """无效 JSON 文件应返回错误。"""
+        import io
+
+        data = b"not valid json {{{"
+        file = (io.BytesIO(data), "bad.json")
+
+        response = client.post(
+            f"{BASE_URL}/import",
+            data={"file": file},
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 400
+        result = response.get_json()
+        assert "JSON" in result["error"]
+
+    def test_import_empty_items_error(self, client):
+        """空数据应返回错误。"""
+        import io
+        import json
+
+        import_data = {"items": []}
+        data = json.dumps(import_data).encode("utf-8")
+        file = (io.BytesIO(data), "empty.json")
+
+        response = client.post(
+            f"{BASE_URL}/import",
+            data={"file": file},
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 400
+
+    def test_import_duplicate_within_same_file_skipped(self, client):
+        """同一导入文件内的重复名称也应跳过。"""
+        import io
+        import json
+
+        import_data = {
+            "items": [
+                {"name": "重复棋", "origin": "源1", "summary": "摘要1", "difficulty": "入门"},
+                {"name": "重复棋", "origin": "源2", "summary": "摘要2", "difficulty": "中等"},
+            ],
+        }
+        data = json.dumps(import_data, ensure_ascii=False).encode("utf-8")
+        file = (io.BytesIO(data), "dup.json")
+
+        response = client.post(
+            f"{BASE_URL}/import",
+            data={"file": file},
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 200
+        result = response.get_json()
+        assert result["success_count"] == 1
+        assert result["skip_count"] == 1
+
+    def test_import_plain_array_format(self, client):
+        """支持纯数组格式的导入数据。"""
+        import io
+        import json
+
+        import_data = [
+            {"name": "数组导入1", "origin": "源", "summary": "摘要", "difficulty": "入门"},
+        ]
+        data = json.dumps(import_data, ensure_ascii=False).encode("utf-8")
+        file = (io.BytesIO(data), "array.json")
+
+        response = client.post(
+            f"{BASE_URL}/import",
+            data={"file": file},
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 200
+        result = response.get_json()
+        assert result["success_count"] == 1

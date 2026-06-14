@@ -118,3 +118,12 @@ export interface Note {
   created_at?: string;
   updated_at?: string;
 }
+
+/** 导入结果 */
+export interface ImportResult {
+  message: string;
+  success_count: number;
+  skip_count: number;
+  failed_count: number;
+  failed: Array<{ index: number; name?: string; error: string }>;
+}
