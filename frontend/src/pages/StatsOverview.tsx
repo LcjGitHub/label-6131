@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Card, Empty, List, Space, Tag, Typography, message } from 'antd';
 import { AppstoreOutlined, BarChartOutlined, ReloadOutlined, TrophyOutlined } from '@ant-design/icons';
 
@@ -16,9 +17,14 @@ const difficultyColor: Record<string, string> = {
 
 /** 统计概览页 */
 export default function StatsOverviewPage() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  const handleDifficultyClick = (difficulty: string) => {
+    navigate(`/?difficulty=${encodeURIComponent(difficulty)}`);
+  };
 
   const loadStats = async () => {
     setLoading(true);
@@ -110,7 +116,8 @@ export default function StatsOverviewPage() {
               <Tag
                 key={difficulty}
                 color={difficultyColor[difficulty] ?? 'default'}
-                style={{ fontSize: 14, padding: '4px 12px', borderRadius: 6 }}
+                style={{ fontSize: 14, padding: '4px 12px', borderRadius: 6, cursor: 'pointer' }}
+                onClick={() => handleDifficultyClick(difficulty)}
               >
                 {difficulty}：{count} 种
               </Tag>

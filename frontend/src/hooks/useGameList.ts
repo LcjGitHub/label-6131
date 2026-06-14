@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd';
 
 import {
@@ -40,12 +41,15 @@ const difficultyOptions = [
   ...DIFFICULTY_OPTIONS,
 ];
 
+const VALID_DIFFICULTIES = DIFFICULTY_OPTIONS.map((opt) => opt.value);
+
 /**
  * 棋类列表状态管理 Hook
  * 负责：筛选条件、排序、分页、列表数据请求、分类数据加载
  * 不负责：CRUD 模态框、收藏、对比勾选（由页面组件自身管理）
  */
 export function useGameList() {
+  const [searchParams] = useSearchParams();
   const [games, setGames] = useState<ChessGame[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [total, setTotal] = useState(0);
@@ -54,7 +58,13 @@ export function useGameList() {
   const [loading, setLoading] = useState(true);
   const [filterCategoryId, setFilterCategoryId] = useState<number>(ALL_CATEGORY_VALUE);
   const [keywordInput, setKeywordInput] = useState('');
-  const [filterDifficulty, setFilterDifficulty] = useState<string>(ALL_DIFFICULTY_VALUE);
+  const initialDifficulty = (() => {
+    const difficultyFromUrl = searchParams.get('difficulty');
+    return difficultyFromUrl && VALID_DIFFICULTIES.includes(difficultyFromUrl)
+      ? difficultyFromUrl
+      : ALL_DIFFICULTY_VALUE;
+  })();
+  const [filterDifficulty, setFilterDifficulty] = useState<string>(initialDifficulty);
   const [sortBy, setSortBy] = useState('id');
   const [sortOrder, setSortOrder] = useState('asc');
   const [searchTrigger, setSearchTrigger] = useState(0);
