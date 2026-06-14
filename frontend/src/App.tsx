@@ -1,6 +1,6 @@
 import { Layout, Menu, Typography } from 'antd';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { AppstoreOutlined, BarChartOutlined, HistoryOutlined, StarOutlined, UnorderedListOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, BarChartOutlined, HistoryOutlined, ScheduleOutlined, StarOutlined, UnorderedListOutlined, ThunderboltOutlined } from '@ant-design/icons';
 
 import CategoryList from './pages/CategoryList';
 import FavoriteList from './pages/FavoriteList';
@@ -10,6 +10,7 @@ import GameList from './pages/GameList';
 import RandomDiscover from './pages/RandomDiscover';
 import RecentViewList from './pages/RecentViewList';
 import StatsOverview from './pages/StatsOverview';
+import TodoList from './pages/TodoList';
 
 const { Header, Content } = Layout;
 const { Title } = Typography;
@@ -19,6 +20,7 @@ const menuItems = [
   { key: '/random', label: '随机发现', icon: <ThunderboltOutlined /> },
   { key: '/recent-views', label: '最近浏览', icon: <HistoryOutlined /> },
   { key: '/favorites', label: '我的收藏', icon: <StarOutlined /> },
+  { key: '/todos', label: '待学清单', icon: <ScheduleOutlined /> },
   { key: '/categories', label: '分类管理', icon: <AppstoreOutlined /> },
 ];
 
@@ -30,6 +32,7 @@ export default function App() {
   const getSelectedKey = () => {
     if (location.pathname.startsWith('/stats')) return '';
     if (location.pathname.startsWith('/categories')) return '/categories';
+    if (location.pathname.startsWith('/todos')) return '/todos';
     if (location.pathname.startsWith('/favorites')) return '/favorites';
     if (location.pathname.startsWith('/recent-views')) return '/recent-views';
     if (location.pathname.startsWith('/random')) return '/random';
@@ -68,6 +71,7 @@ export default function App() {
           <Route path="/random" element={<RandomDiscover />} />
           <Route path="/recent-views" element={<RecentViewList />} />
           <Route path="/favorites" element={<FavoriteList />} />
+          <Route path="/todos" element={<TodoList />} />
           <Route path="/categories" element={<CategoryList />} />
           <Route path="/games/:id" element={<GameDetail />} />
           <Route path="/compare" element={<GameCompare />} />

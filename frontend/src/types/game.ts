@@ -66,6 +66,14 @@ export interface RecentView {
   game: ChessGame | null;
 }
 
+/** 待学清单条目类型 */
+export interface Todo {
+  id: number;
+  game_id: number;
+  created_at?: string;
+  game: ChessGame | null;
+}
+
 /** 批量获取中存在错误的条目 */
 export interface ChessGameError {
   id: number;

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button, Descriptions, Input, Spin, Tag, Tooltip, Typography, message } from 'antd';
-import { ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, LeftOutlined, LinkOutlined, RightOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, LeftOutlined, LinkOutlined, RightOutlined, ScheduleFilled, ScheduleOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 
-import { fetchGame, fetchGameNeighbors, fetchSimilarGames, addRecentView, fetchNote, saveNote, clearNote, checkLinks } from '../api/client';
+import { fetchGame, fetchGameNeighbors, fetchSimilarGames, addRecentView, fetchNote, saveNote, clearNote, checkLinks, addTodo, removeTodo, fetchTodoIds } from '../api/client';
 import type { ChessGame, GameNeighbors, LinkCheckResult, SimilarGamesResponse } from '../types/game';
 
 const { Title, Paragraph, Text } = Typography;
@@ -33,6 +33,7 @@ export default function GameDetail() {
   const [linkResults, setLinkResults] = useState<LinkCheckResult[]>([]);
   const [linkChecking, setLinkChecking] = useState(false);
   const [linkCheckError, setLinkCheckError] = useState(false);
+  const [isTodo, setIsTodo] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -44,11 +45,18 @@ export default function GameDetail() {
       setLinkResults([]);
       setLinkChecking(false);
       setLinkCheckError(false);
+      setIsTodo(false);
       try {
         const gameId = Number(id);
         const gameData = await fetchGame(gameId);
         setGame(gameData);
         addRecentView(gameId).catch(() => {});
+        try {
+          const todoIds = await fetchTodoIds();
+          setIsTodo(todoIds.includes(gameId));
+        } catch {
+          setIsTodo(false);
+        }
         try {
           const noteData = await fetchNote(gameId);
           setNoteContent(noteData.content || '');
@@ -88,6 +96,29 @@ export default function GameDetail() {
     };
     load();
   }, [id]);
+
+  const toggleTodo = async () => {
+    if (!id) return;
+    const gameId = Number(id);
+    try {
+      if (isTodo) {
+        await removeTodo(gameId);
+        setIsTodo(false);
+        message.success('已移出待学');
+      } else {
+        await addTodo(gameId);
+        setIsTodo(true);
+        message.success('已加入待学');
+      }
+    } catch (err) {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { error?: string } } };
+        message.error(axiosErr.response?.data?.error ?? '操作失败');
+      } else {
+        message.error('操作失败');
+      }
+    }
+  };
 
   const handleSaveNote = async () => {
     if (!id) return;
@@ -249,7 +280,16 @@ export default function GameDetail() {
         <Link to="/">返回列表</Link>
       </Button>
 
-      <Title level={2}>{game.name}</Title>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+        <Title level={2} style={{ margin: 0 }}>{game.name}</Title>
+        <Button
+          icon={isTodo ? <ScheduleFilled /> : <ScheduleOutlined />}
+          onClick={toggleTodo}
+          type={isTodo ? 'primary' : 'default'}
+        >
+          {isTodo ? '已待学' : '加入待学'}
+        </Button>
+      </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
         <Tooltip title={getPrevTooltip()}>

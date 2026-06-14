@@ -15,10 +15,11 @@ import {
   Typography,
   message,
 } from 'antd';
-import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined, StarFilled, StarOutlined, UploadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined, ScheduleFilled, ScheduleOutlined, StarFilled, StarOutlined, UploadOutlined } from '@ant-design/icons';
 
 import {
   addFavorite,
+  addTodo,
   batchDeleteGames,
   createGame,
   createTag,
@@ -26,8 +27,10 @@ import {
   exportGames,
   fetchFavoriteIds,
   fetchTags,
+  fetchTodoIds,
   importGames,
   removeFavorite,
+  removeTodo,
   setGameTags,
   updateGame,
 } from '../api/client';
@@ -68,6 +71,7 @@ export default function GameList() {
   const [editing, setEditing] = useState<ChessGame | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
+  const [todoIds, setTodoIds] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [batchDeleteModalOpen, setBatchDeleteModalOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
@@ -86,6 +90,15 @@ export default function GameList() {
       setFavoriteIds(new Set(ids));
     } catch {
       message.error('加载收藏状态失败');
+    }
+  };
+
+  const loadTodoIds = async () => {
+    try {
+      const ids = await fetchTodoIds();
+      setTodoIds(new Set(ids));
+    } catch {
+      message.error('加载待学状态失败');
     }
   };
 
@@ -131,6 +144,7 @@ export default function GameList() {
   // 组件挂载时加载收藏状态（分类和列表数据已在 useGameList 中加载）
   useEffect(() => {
     loadFavoriteIds();
+    loadTodoIds();
   }, []);
 
   const toggleFavorite = async (gameId: number) => {
@@ -151,6 +165,32 @@ export default function GameList() {
           return next;
         });
         message.success('已收藏');
+      }
+    } catch (err) {
+      if (axiosIsError(err)) {
+        message.error(err.response?.data?.error ?? '操作失败');
+      }
+    }
+  };
+
+  const toggleTodo = async (gameId: number) => {
+    try {
+      if (todoIds.has(gameId)) {
+        await removeTodo(gameId);
+        setTodoIds((prev) => {
+          const next = new Set(prev);
+          next.delete(gameId);
+          return next;
+        });
+        message.success('已移出待学');
+      } else {
+        await addTodo(gameId);
+        setTodoIds((prev) => {
+          const next = new Set(prev);
+          next.add(gameId);
+          return next;
+        });
+        message.success('已加入待学');
       }
     } catch (err) {
       if (axiosIsError(err)) {
@@ -435,6 +475,15 @@ export default function GameList() {
                 style={favoriteIds.has(item.id) ? { color: '#faad14' } : undefined}
               >
                 {favoriteIds.has(item.id) ? '已收藏' : '收藏'}
+              </Button>,
+              <Button
+                key="todo"
+                type="link"
+                icon={todoIds.has(item.id) ? <ScheduleFilled /> : <ScheduleOutlined />}
+                onClick={() => toggleTodo(item.id)}
+                style={todoIds.has(item.id) ? { color: '#1677ff' } : undefined}
+              >
+                {todoIds.has(item.id) ? '已待学' : '待学'}
               </Button>,
               <Button key="edit" type="link" icon={<EditOutlined />} onClick={() => openEdit(item)}>
                 编辑

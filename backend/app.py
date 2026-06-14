@@ -15,6 +15,7 @@ from routes.notes import notes_bp
 from routes.recent_views import recent_views_bp
 from routes.stats import stats_bp
 from routes.tags import tags_bp
+from routes.todos import todos_bp
 from seed import seed_database
 
 
@@ -82,6 +83,7 @@ def create_app(config: dict | None = None) -> Flask:
     app.register_blueprint(recent_views_bp)
     app.register_blueprint(stats_bp)
     app.register_blueprint(tags_bp)
+    app.register_blueprint(todos_bp)
 
     @app.get("/api/health")
     def health():

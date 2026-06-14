@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, ImportResult, LinkCheckResponse, Note, PaginatedResponse, RecentView, SimilarGamesResponse, StatsOverview, Tag, TagPayload } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, ImportResult, LinkCheckResponse, Note, PaginatedResponse, RecentView, SimilarGamesResponse, StatsOverview, Tag, TagPayload, Todo } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -354,4 +354,42 @@ export async function checkLinks(gameId: number): Promise<LinkCheckResponse> {
     timeout: 30000,
   });
   return data;
+}
+
+/**
+ * 获取全部待学清单列表（含棋类详情）
+ * @returns 待学条目数组
+ */
+export async function fetchTodos(sortOrder: 'asc' | 'desc' = 'desc'): Promise<Todo[]> {
+  const { data } = await client.get<Todo[]>('/todos', {
+    params: { sort_order: sortOrder },
+  });
+  return data;
+}
+
+/**
+ * 获取全部已加入待学的棋类 ID 列表
+ * @returns 已加入待学的棋类 ID 数组
+ */
+export async function fetchTodoIds(): Promise<number[]> {
+  const { data } = await client.get<number[]>('/todos/ids');
+  return data;
+}
+
+/**
+ * 加入待学清单
+ * @param gameId - 棋类 ID
+ * @returns 新建的待学条目
+ */
+export async function addTodo(gameId: number): Promise<Todo> {
+  const { data } = await client.post<Todo>('/todos', { game_id: gameId });
+  return data;
+}
+
+/**
+ * 移出待学清单
+ * @param gameId - 棋类 ID
+ */
+export async function removeTodo(gameId: number): Promise<void> {
+  await client.delete(`/todos/${gameId}`);
 }
