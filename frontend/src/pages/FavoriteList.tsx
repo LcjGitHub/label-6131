@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Empty, List, Space, Spin, Tag, Typography, message } from 'antd';
+import { Button, Empty, List, Select, Space, Spin, Tag, Typography, message } from 'antd';
 import { StarFilled } from '@ant-design/icons';
 
 import { fetchFavorites, removeFavorite } from '../api/client';
@@ -15,15 +15,20 @@ const difficultyColor: Record<string, string> = {
   困难: 'red',
 };
 
-/** 我的收藏页 */
+const sortOptions = [
+  { value: 'desc', label: '最近收藏' },
+  { value: 'asc', label: '最早收藏' },
+];
+
 export default function FavoriteList() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const loadFavorites = async () => {
+  const loadFavorites = async (order: 'asc' | 'desc') => {
     setLoading(true);
     try {
-      const data = await fetchFavorites();
+      const data = await fetchFavorites(order);
       setFavorites(data);
     } catch {
       message.error('加载收藏列表失败');
@@ -33,8 +38,12 @@ export default function FavoriteList() {
   };
 
   useEffect(() => {
-    loadFavorites();
-  }, []);
+    loadFavorites(sortOrder);
+  }, [sortOrder]);
+
+  const handleSortChange = (value: 'asc' | 'desc') => {
+    setSortOrder(value);
+  };
 
   const handleRemove = async (gameId: number) => {
     try {
@@ -68,6 +77,12 @@ export default function FavoriteList() {
     <>
       <Space style={{ marginBottom: 16 }}>
         <Text type="secondary">共 {favorites.length} 个收藏</Text>
+        <Select
+          value={sortOrder}
+          onChange={handleSortChange}
+          options={sortOptions}
+          style={{ width: 120 }}
+        />
       </Space>
 
       <List

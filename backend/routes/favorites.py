@@ -11,8 +11,10 @@ favorites_bp = Blueprint("favorites", __name__, url_prefix="/api/favorites")
 
 @favorites_bp.get("")
 def list_favorites():
-    """获取全部收藏列表。"""
-    favorites = Favorite.query.order_by(Favorite.created_at.desc()).all()
+    """获取全部收藏列表，支持按收藏时间排序。"""
+    sort_order = request.args.get("sort_order", "desc").lower()
+    order_col = Favorite.created_at.desc() if sort_order == "desc" else Favorite.created_at.asc()
+    favorites = Favorite.query.order_by(order_col).all()
     return jsonify([fav.to_dict() for fav in favorites])
 
 

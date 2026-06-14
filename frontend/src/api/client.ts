@@ -166,8 +166,10 @@ export async function batchDeleteGames(ids: number[]): Promise<{
  * 获取全部收藏列表（含棋类详情）
  * @returns 收藏条目数组
  */
-export async function fetchFavorites(): Promise<Favorite[]> {
-  const { data } = await client.get<Favorite[]>('/favorites');
+export async function fetchFavorites(sortOrder: 'asc' | 'desc' = 'desc'): Promise<Favorite[]> {
+  const { data } = await client.get<Favorite[]>('/favorites', {
+    params: { sort_order: sortOrder },
+  });
   return data;
 }
 
