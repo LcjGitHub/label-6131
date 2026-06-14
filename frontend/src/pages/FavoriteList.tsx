@@ -125,6 +125,11 @@ export default function FavoriteList() {
                       <Tag color={difficultyColor[game.difficulty] ?? 'default'}>
                         {game.difficulty}
                       </Tag>
+                      {game.tags?.map((tag) => (
+                        <Tag key={tag.id} color={tag.color || 'geekblue'}>
+                          {tag.name}
+                        </Tag>
+                      ))}
                     </Space>
                   </Space>
                 }

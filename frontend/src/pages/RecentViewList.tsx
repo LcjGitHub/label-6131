@@ -86,13 +86,18 @@ export default function RecentViewList() {
                   </span>
                 }
               />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <Tag color={game.category_name ? 'purple' : 'default'}>
                   {game.category_name ?? '未分类'}
                 </Tag>
                 <Tag color={difficultyColor[game.difficulty] ?? 'default'}>
                   {game.difficulty}
                 </Tag>
+                {game.tags?.map((tag) => (
+                  <Tag key={tag.id} color={tag.color || 'geekblue'}>
+                    {tag.name}
+                  </Tag>
+                ))}
                 <Text type="secondary" style={{ marginLeft: 8 }}>
                   起源：{game.origin}
                 </Text>

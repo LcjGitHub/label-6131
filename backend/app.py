@@ -13,6 +13,7 @@ from routes.games import games_bp
 from routes.notes import notes_bp
 from routes.recent_views import recent_views_bp
 from routes.stats import stats_bp
+from routes.tags import tags_bp
 from seed import seed_database
 
 
@@ -24,14 +25,15 @@ def _auto_migrate(app: Flask) -> None:
      """
     inspector = inspect(app.extensions["sqlalchemy"].engine)
     with app.app_context():
-        if "chess_games" in inspector.get_table_names():
-            existing = {col["name"] for col in inspector.get_columns("chess_games")}
-            model_cols = {
-                c.name for c in db.metadata.tables["chess_games"].columns
-            }
-            missing = model_cols - existing
+        existing_tables = set(inspector.get_table_names())
+        for table_name, table in db.metadata.tables.items():
+            if table_name not in existing_tables:
+                continue
+            existing_cols = {col["name"] for col in inspector.get_columns(table_name)}
+            model_cols = {c.name for c in table.columns}
+            missing = model_cols - existing_cols
             for col_name in missing:
-                col = db.metadata.tables["chess_games"].columns[col_name]
+                col = table.columns[col_name]
                 col_type = col.type.compile(dialect=db.engine.dialect)
                 nullable = "" if col.nullable else "NOT NULL"
                 default = ""
@@ -39,13 +41,13 @@ def _auto_migrate(app: Flask) -> None:
                     default = f"DEFAULT {col.server_default.arg}"
                 db.session.execute(
                     db.text(
-                        f"ALTER TABLE chess_games ADD COLUMN {col_name} {col_type} {nullable} {default}"
+                        f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type} {nullable} {default}"
                     )
                 )
             if missing:
                 db.session.commit()
 
-        if "categories" not in inspector.get_table_names():
+        if "categories" not in existing_tables:
             db.create_all()
 
 
@@ -77,6 +79,7 @@ def create_app(config: dict | None = None) -> Flask:
     app.register_blueprint(notes_bp)
     app.register_blueprint(recent_views_bp)
     app.register_blueprint(stats_bp)
+    app.register_blueprint(tags_bp)
 
     @app.get("/api/health")
     def health():

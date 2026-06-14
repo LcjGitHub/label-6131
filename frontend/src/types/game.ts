@@ -1,3 +1,17 @@
+/** 标签条目类型 */
+export interface Tag {
+  id: number;
+  name: string;
+  color: string;
+  created_at?: string;
+}
+
+/** 创建标签请求体 */
+export interface TagPayload {
+  name: string;
+  color?: string;
+}
+
 /** 分类条目类型 */
 export interface Category {
   id: number;
@@ -21,6 +35,7 @@ export interface ChessGame {
   board_size: string;
   category_id: number | null;
   category_name: string | null;
+  tags: Tag[];
   created_at?: string;
   updated_at?: string;
 }

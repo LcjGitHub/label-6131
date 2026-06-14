@@ -135,6 +135,7 @@ class ChessGame(db.Model):
             "board_size": self.board_size or "",
             "category_id": self.category_id,
             "category_name": self.category.name if self.category else None,
+            "tags": [gt.tag.to_dict() for gt in self.game_tags] if self.game_tags else [],
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -175,3 +176,53 @@ class Note(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class Tag(db.Model):
+    """特色标签。"""
+
+    __tablename__ = "tags"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False, unique=True)
+    color = db.Column(db.String(20), nullable=True)
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def to_dict(self) -> dict:
+        """
+        序列化为 API 响应字典。
+
+        @returns {dict} 标签条目
+        """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "color": self.color or "",
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class GameTag(db.Model):
+    """棋类与标签的关联。"""
+
+    __tablename__ = "game_tags"
+
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey("chess_games.id", ondelete="CASCADE"), nullable=False)
+    tag_id = db.Column(db.Integer, db.ForeignKey("tags.id", ondelete="CASCADE"), nullable=False)
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    game = db.relationship("ChessGame", backref="game_tags", lazy=True)
+    tag = db.relationship("Tag", backref="game_tags", lazy=True)
+
+    __table_args__ = (
+        db.UniqueConstraint("game_id", "tag_id", name="uq_game_tag"),
+    )

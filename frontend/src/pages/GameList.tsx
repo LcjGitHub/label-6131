@@ -21,14 +21,17 @@ import {
   addFavorite,
   batchDeleteGames,
   createGame,
+  createTag,
   deleteGame,
   exportGames,
   fetchFavoriteIds,
+  fetchTags,
   importGames,
   removeFavorite,
+  setGameTags,
   updateGame,
 } from '../api/client';
-import type { ChessGame, ChessGamePayload } from '../types/game';
+import type { ChessGame, ChessGamePayload, Tag as ChessTag } from '../types/game';
 import { useGameList } from '../hooks/useGameList';
 
 const { Paragraph, Text } = Typography;
@@ -70,6 +73,10 @@ export default function GameList() {
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [form] = Form.useForm<ChessGamePayload>();
   const [importing, setImporting] = useState(false);
+  const [allTags, setAllTags] = useState<ChessTag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [newTagName, setNewTagName] = useState('');
+  const [tagLoading, setTagLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -79,6 +86,45 @@ export default function GameList() {
       setFavoriteIds(new Set(ids));
     } catch {
       message.error('加载收藏状态失败');
+    }
+  };
+
+  const loadTags = async () => {
+    try {
+      setTagLoading(true);
+      const data = await fetchTags();
+      setAllTags(data.items);
+    } catch {
+      message.error('加载标签列表失败');
+    } finally {
+      setTagLoading(false);
+    }
+  };
+
+  const handleCreateTag = async () => {
+    const name = newTagName.trim();
+    if (!name) {
+      message.warning('请输入标签名称');
+      return;
+    }
+    if (name.length > 50) {
+      message.warning('标签名称不能超过 50 个字符');
+      return;
+    }
+    if (allTags.some((t) => t.name === name)) {
+      message.warning('标签已存在');
+      return;
+    }
+    try {
+      const newTag = await createTag({ name });
+      setAllTags((prev) => [...prev, newTag]);
+      setSelectedTagIds((prev) => [...prev, newTag.id]);
+      setNewTagName('');
+      message.success('标签创建成功');
+    } catch (err) {
+      if (axiosIsError(err)) {
+        message.error(err.response?.data?.error ?? '创建标签失败');
+      }
     }
   };
 
@@ -116,6 +162,8 @@ export default function GameList() {
   const openCreate = () => {
     setEditing(null);
     form.resetFields();
+    setSelectedTagIds([]);
+    loadTags();
     setModalOpen(true);
   };
 
@@ -130,6 +178,8 @@ export default function GameList() {
       board_size: game.board_size,
       category_id: game.category_id ?? undefined,
     });
+    setSelectedTagIds(game.tags?.map((t) => t.id) ?? []);
+    loadTags();
     setModalOpen(true);
   };
 
@@ -141,13 +191,16 @@ export default function GameList() {
         ...values,
         category_id: values.category_id ?? null,
       };
+      let gameId: number;
       if (editing) {
         await updateGame(editing.id, payload);
-        message.success('更新成功');
+        gameId = editing.id;
       } else {
-        await createGame(payload);
-        message.success('创建成功');
+        const newGame = await createGame(payload);
+        gameId = newGame.id;
       }
+      await setGameTags(gameId, selectedTagIds);
+      message.success(editing ? '更新成功' : '创建成功');
       setModalOpen(false);
       await reloadGames(editing ? page : 1, pageSize);
     } catch (err) {
@@ -423,6 +476,11 @@ export default function GameList() {
                         <Tag color={difficultyColor[item.difficulty] ?? 'default'}>
                           {item.difficulty}
                         </Tag>
+                        {item.tags?.map((tag) => (
+                          <Tag key={tag.id} color={tag.color || 'geekblue'}>
+                            {tag.name}
+                          </Tag>
+                        ))}
                       </Space>
                     </Space>
                   }
@@ -487,6 +545,29 @@ export default function GameList() {
               placeholder="选择分类（可选）"
               allowClear
             />
+          </Form.Item>
+          <Form.Item label="特色标签">
+            <Select
+              mode="multiple"
+              placeholder="选择已有标签"
+              value={selectedTagIds}
+              onChange={setSelectedTagIds}
+              options={allTags.map((t) => ({ label: t.name, value: t.id }))}
+              loading={tagLoading}
+              allowClear
+              style={{ width: '100%', marginBottom: 8 }}
+            />
+            <Space.Compact style={{ width: '100%' }}>
+              <Input
+                placeholder="输入新标签名称，点击右侧按钮创建"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                onPressEnter={handleCreateTag}
+              />
+              <Button type="primary" onClick={handleCreateTag}>
+                新建
+              </Button>
+            </Space.Compact>
           </Form.Item>
           <Form.Item name="links" label="相关链接">
             <Input placeholder="https://..." />

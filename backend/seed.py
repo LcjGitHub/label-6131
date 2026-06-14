@@ -1,6 +1,6 @@
 """种子数据：5 条冷门棋类规则及默认分类。"""
 
-from models import Category, ChessGame, db
+from models import Category, ChessGame, GameTag, Tag, db
 
 SEED_CATEGORIES = [
     "连子类",
@@ -23,6 +23,7 @@ SEED_GAMES = [
         "links": "https://zh.wikipedia.org/wiki/%E9%80%A3%E7%8F%A0",
         "board_size": "15×15",
         "category_name": "连子类",
+        "tags": ["经典", "禁手规则"],
     },
     {
         "name": "九子棋（Nine Men's Morris）",
@@ -38,6 +39,7 @@ SEED_GAMES = [
         "links": "https://zh.wikipedia.org/wiki/%E4%B9%9D%E5%AD%90%E6%A3%8B",
         "board_size": "7×7（三环线型）",
         "category_name": "摆设类",
+        "tags": ["历史悠久", "策略"],
     },
     {
         "name": "将棋（Shogi）",
@@ -52,6 +54,7 @@ SEED_GAMES = [
         "links": "https://zh.wikipedia.org/wiki/%E5%B0%86%E6%A3%8B",
         "board_size": "9×9",
         "category_name": "将棋类",
+        "tags": ["经典", "持驹规则"],
     },
     {
         "name": "韩国janggi（韩国象棋）",
@@ -66,6 +69,7 @@ SEED_GAMES = [
         "links": "https://zh.wikipedia.org/wiki/%E9%9F%A9%E5%9B%BD%E8%B1%A1%E6%A3%8B",
         "board_size": "9×10",
         "category_name": "象棋变体",
+        "tags": ["变体", "策略"],
     },
     {
         "name": "菲舍尔随机象棋（Chess960）",
@@ -80,7 +84,19 @@ SEED_GAMES = [
         "links": "https://zh.wikipedia.org/wiki/%E8%8F%B2%E8%88%8D%E7%88%B7%E9%9A%8F%E6%9C%BA%E8%B1%A1%E6%A3%8B",
         "board_size": "8×8",
         "category_name": "国际象棋变体",
+        "tags": ["变体", "随机开局"],
     },
+]
+
+SEED_TAGS = [
+    "经典",
+    "历史悠久",
+    "策略",
+    "变体",
+    "禁手规则",
+    "持驹规则",
+    "随机开局",
+    "入门友好",
 ]
 
 
@@ -143,14 +159,56 @@ def _seed_games(name_to_id: dict[str, int]) -> None:
         return
 
     for item in SEED_GAMES:
-        cat_name = item.pop("category_name", None)
+        game_data = {k: v for k, v in item.items() if k not in ("category_name", "tags")}
+        cat_name = item.get("category_name")
         category_id = name_to_id.get(cat_name) if cat_name else None
-        db.session.add(ChessGame(category_id=category_id, **item))
+        db.session.add(ChessGame(category_id=category_id, **game_data))
+
+
+def _ensure_tags() -> dict[str, int]:
+    """
+    补全缺失的种子标签，返回名称到 ID 的映射。
+
+    @returns {dict[str, int]} 标签名称到 ID 的映射
+    """
+    name_to_id: dict[str, int] = {}
+    for name in SEED_TAGS:
+        tag = Tag.query.filter_by(name=name).first()
+        if not tag:
+            tag = Tag(name=name)
+            db.session.add(tag)
+            db.session.flush()
+        name_to_id[name] = tag.id
+    return name_to_id
+
+
+def _assign_tags_to_seed_games(name_to_id: dict[str, int]) -> None:
+    """
+    为种子棋类分配标签（仅在棋类尚无标签时分配）。
+
+    @param {dict[str, int]} name_to_id - 标签名称到 ID 的映射
+    """
+    for seed_item in SEED_GAMES:
+        game_name = seed_item["name"]
+        game = ChessGame.query.filter_by(name=game_name).first()
+        if not game:
+            continue
+
+        existing_count = GameTag.query.filter_by(game_id=game.id).count()
+        if existing_count > 0:
+            continue
+
+        tag_names = seed_item.get("tags", [])
+        for tag_name in tag_names:
+            tag_id = name_to_id.get(tag_name)
+            if tag_id:
+                game_tag = GameTag(game_id=game.id, tag_id=tag_id)
+                db.session.add(game_tag)
 
 
 def seed_database() -> None:
     """
-     启动时补全默认分类、为无分类棋类分配分类、补全缺失的棋盘规格、写入种子数据。
+     启动时补全默认分类、为无分类棋类分配分类、补全缺失的棋盘规格、写入种子数据、补全标签、分配种子标签。
 
      @returns {None}
      """
@@ -158,4 +216,6 @@ def seed_database() -> None:
     _assign_categories_to_orphans(name_to_id)
     _backfill_board_sizes()
     _seed_games(name_to_id)
+    tag_name_to_id = _ensure_tags()
+    _assign_tags_to_seed_games(tag_name_to_id)
     db.session.commit()

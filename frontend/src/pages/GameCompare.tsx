@@ -111,6 +111,7 @@ export default function GameCompare() {
     { field: 'origin', label: '起源' },
     { field: 'board_size', label: '棋盘规格' },
     { field: 'difficulty', label: '难度' },
+    { field: 'tags', label: '特色标签' },
     { field: 'summary', label: '规则摘要' },
     { field: 'links', label: '相关链接' },
   ];
@@ -205,6 +206,18 @@ function renderCell(game: ChessGame, field: string) {
     case 'difficulty':
       return (
         <Tag color={difficultyColor[game.difficulty] ?? 'default'}>{game.difficulty}</Tag>
+      );
+    case 'tags':
+      return game.tags?.length ? (
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {game.tags.map((tag) => (
+            <Tag key={tag.id} color={tag.color || 'geekblue'}>
+              {tag.name}
+            </Tag>
+          ))}
+        </div>
+      ) : (
+        <Text type="secondary">暂无</Text>
       );
     case 'summary':
       return (

@@ -9,7 +9,7 @@ from io import BytesIO
 from flask import Blueprint, jsonify, request, send_file
 from sqlalchemy import case
 
-from models import Category, ChessGame, Favorite, RecentView, db
+from models import Category, ChessGame, Favorite, GameTag, RecentView, db
 
 games_bp = Blueprint("games", __name__, url_prefix="/api/games")
 
@@ -328,6 +328,7 @@ def delete_game(game_id: int):
 
     Favorite.query.filter_by(game_id=game_id).delete()
     RecentView.query.filter_by(game_id=game_id).delete()
+    GameTag.query.filter_by(game_id=game_id).delete()
     db.session.delete(game)
     db.session.commit()
     return jsonify({"message": "删除成功"})
@@ -364,6 +365,7 @@ def delete_games_batch():
         try:
             Favorite.query.filter_by(game_id=game_id).delete()
             RecentView.query.filter_by(game_id=game_id).delete()
+            GameTag.query.filter_by(game_id=game_id).delete()
             db.session.delete(game)
             db.session.commit()
             success_count += 1

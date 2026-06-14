@@ -175,6 +175,19 @@ export default function GameDetail() {
             <Tag>未分类</Tag>
           )}
         </Descriptions.Item>
+        <Descriptions.Item label="特色标签">
+          {game.tags?.length ? (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {game.tags.map((tag) => (
+                <Tag key={tag.id} color={tag.color || 'geekblue'}>
+                  {tag.name}
+                </Tag>
+              ))}
+            </div>
+          ) : (
+            <Text type="secondary">暂无标签</Text>
+          )}
+        </Descriptions.Item>
         <Descriptions.Item label="起源">{game.origin}</Descriptions.Item>
         <Descriptions.Item label="棋盘规格">
           {game.board_size ? (

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, ImportResult, Note, PaginatedResponse, RecentView, SimilarGamesResponse, StatsOverview } from '../types/game';
+import type { Category, CategoryPayload, ChessGame, ChessGameBatchItem, ChessGamePayload, Favorite, GameNeighbors, ImportResult, Note, PaginatedResponse, RecentView, SimilarGamesResponse, StatsOverview, Tag, TagPayload } from '../types/game';
 
 const client = axios.create({
   baseURL: '/api',
@@ -286,6 +286,51 @@ export async function importGames(file: File): Promise<ImportResult> {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+  });
+  return data;
+}
+
+/**
+ * 获取标签列表
+ * @param keyword - 可选的关键词搜索
+ * @returns 标签列表
+ */
+export async function fetchTags(keyword?: string): Promise<{ items: Tag[]; total: number }> {
+  const params: Record<string, string> = {};
+  if (keyword?.trim()) params.keyword = keyword.trim();
+  const { data } = await client.get<{ items: Tag[]; total: number }>('/tags', { params });
+  return data;
+}
+
+/**
+ * 创建标签
+ * @param payload - 创建数据
+ * @returns 新建标签
+ */
+export async function createTag(payload: TagPayload): Promise<Tag> {
+  const { data } = await client.post<Tag>('/tags', payload);
+  return data;
+}
+
+/**
+ * 获取指定棋类的标签列表
+ * @param gameId - 棋类 ID
+ * @returns 标签列表
+ */
+export async function fetchGameTags(gameId: number): Promise<{ items: Tag[]; total: number }> {
+  const { data } = await client.get<{ items: Tag[]; total: number }>(`/tags/games/${gameId}`);
+  return data;
+}
+
+/**
+ * 为指定棋类设置标签列表（全量替换）
+ * @param gameId - 棋类 ID
+ * @param tagIds - 标签 ID 数组
+ * @returns 设置后的标签列表
+ */
+export async function setGameTags(gameId: number, tagIds: number[]): Promise<{ items: Tag[]; total: number }> {
+  const { data } = await client.put<{ items: Tag[]; total: number }>(`/tags/games/${gameId}`, {
+    tag_ids: tagIds,
   });
   return data;
 }
